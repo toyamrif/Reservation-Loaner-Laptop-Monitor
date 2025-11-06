@@ -74,8 +74,8 @@
 
         <form id="reservationForm">
             <div class="form-group">
-                <label for="userName">お名前 / Your Name:</label>
-                <input type="text" id="userName" required placeholder="例: 山田太郎">
+                <label for="userName">Alias :</label>
+                <input type="text" id="userName" required placeholder="例: jeff">
             </div>
 
             <div class="form-group">
@@ -147,7 +147,6 @@
                 <input type="date" id="returnDate" required>
             </div>
 
-
             <div class="form-group">
                 <label for="purpose">利用目的 / Purpose:</label>
                 <input type="text" id="purpose" placeholder="例: 会議参加、プレゼンテーション等">
@@ -167,14 +166,14 @@
         // 今日の日付を最小値として設定
         const today = new Date().toISOString().split('T');
         document.getElementById('date').min = today;
-        document.getElementbyid('returnDate').min = today;
+        document.getElementByid('returnDate').min = today;
 
         // 利用開始日が変更されたら、返却日の最小値を更新
-        socument.getElementById('date').addEventListener('change' , function(){  
+        document.getElementById('date').addEventListener('change' , function() {  
             document.getElementById('returnDate').min = this.value;
         });
 
-        document.getElementById('reservationFrom').addEventListener('submit', function(e){
+        document.getElementById('reservationFrom').addEventListener('submit', function(e) {
             e.preventDefault();
 
              const formData = {
@@ -182,13 +181,13 @@
                 email: document.getElementById('email').value,
                 resource: document.getElementById('resource').value,
                 date: document.getElementById('date').value,
-                retunDate: document.getElementById('returnDate').value,
+                returnDate: document.getElementById('returnDate').value,
                 purpose: document.getElementById('purpose').value
              };
 
              //日付バリデーション
-             if(new Date(formDate.returnDate) < new Date(formDate.date)) {
-                alart('返却予定日は利用開始以降を選択してください');
+             if(new Date(formData.returnDate) < new Date(formData.date)) {
+                alert('返却予定日は利用開始以降を選択してください。');
                 return;
                 
              }
