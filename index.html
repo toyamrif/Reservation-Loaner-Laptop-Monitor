@@ -120,23 +120,6 @@
             </div>
 
 
-                <!-- ノートパソコン-->
-                <div class="resource">
-                    <label for="laptopQty">
-                        <input type="checkbox" id="laptopCheck" onchange="toggleQuantity('laptop')">
-                        ノートパソコン / Laptop(最大20台)
-                    </label>
-                    <input type="number" id="laptopQty" min="0" max="20" value="0"disabled
-                           placeholder="台数を入力">
-                </div>
-                <!--モニター-->
-                <div class="resource-item">
-                    <label for="monitorQty">
-                        <input type="number">
-
-
-            </div>
-
             <div class="form-group">
                 <label for="date">利用日 / Date:</label>
                 <input type="date" id="date" required>
@@ -166,14 +149,14 @@
         // 今日の日付を最小値として設定
         const today = new Date().toISOString().split('T');
         document.getElementById('date').min = today;
-        document.getElementByid('returnDate').min = today;
+        document.getElementById('returnDate').min = today;
 
         // 利用開始日が変更されたら、返却日の最小値を更新
         document.getElementById('date').addEventListener('change' , function() {  
             document.getElementById('returnDate').min = this.value;
         });
 
-        document.getElementById('reservationFrom').addEventListener('submit', function(e) {
+        document.getElementById('reservationForm').addEventListener('submit', function(e) {
             e.preventDefault();
 
              const formData = {
