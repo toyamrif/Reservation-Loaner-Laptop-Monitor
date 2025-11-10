@@ -74,8 +74,8 @@
 
         <form id="reservationForm">
             <div class="form-group">
-                <label for="userName">お名前 / Your Name:</label>
-                <input type="text" id="userName" required placeholder="例: 山田太郎">
+                <label for="userName">Alias :</label>
+                <input type="text" id="userName" required placeholder="例: jeff">
             </div>
 
             <div class="form-group">
@@ -83,15 +83,33 @@
                 <input type="email" id="email" required placeholder="例: yamada@amazon.com">
             </div>
 
+
             <div class="form-group">
                 <label for="resource">予約機器 / Resource Type:</label>
-                <select id="resource" required>
+                <select id="select"required>
                     <option value="">機器を選択してください</option>
-                    <option value="laptop">ノートパソコン / Loaner Laptop</option>
-                    <option value="monitor">外部モニター / External Monitor</option>
-                    <option value="both">ノートパソコン + モニター / Laptop + Monitor</option>
+
+                    <!--ノートパソコンのオプション-->
+                    <optgroup label="ノートパソコン / laptop">
+                        <option value="laptop-amazon">ノートパソコン (Amazon Image)</option>
+                        <option value="laptop-non-amazon">ノートパソコン (Non-Amazon Image)</option>
+                        <option value="laptop-both">ノートパソコン (両方対応可能)</option>
+                    </optgroup>
+                
+                    <!--モニターのオプション-->
+                    <optgroup label="外部モニター / Monitor">
+                        <option value="monitor">外部モニター</option>
+                    </optgroup>
+
+                    <!--セット(ラップトップ+モニター)のオプション-->
+                    <optgroup label="セット / Laptop + Monitor Set">
+                        <option value="set-amazon">ラップトップ(Amazon Image) + モニター</option>
+                        <option value="set-non-amazon">ラップトップ(Non-Amazon Image)+ モニター</option>
+                        <option value="set-both">ラップトップ(両方対応可能)</option>
+                    </optgroup>
                 </select>
             </div>
+
 
             <div class="form-group">
                 <label for="date">利用日 / Date:</label>
@@ -99,13 +117,8 @@
             </div>
 
             <div class="form-group">
-                <label for="time">利用時間 / Time:</label>
-                <select id="time" required>
-                    <option value="">時間を選択してください</option>
-                    <option value="09:00-12:00">午前 / Morning (9:00-12:00)</option>
-                    <option value="13:00-17:00">午後 / Afternoon (13:00-17:00)</option>
-                    <option value="09:00-17:00">終日 / Full Day (9:00-17:00)</option>
-                </select>
+                <label for="returnDate">返却日 / Date:</label>
+                <input type="date" id="returnDate" required>
             </div>
 
             <div class="form-group">
@@ -125,27 +138,41 @@
 
     <script>
         // 今日の日付を最小値として設定
-        document.getElementById('date').min = new Date().toISOString().split('T');
+        const today = new Date().toISOString().split('T');
+        document.getElementById('date').min = today;
+        document.getElementById('returnDate').min = today;
+
+        // 利用開始日が変更されたら、返却日の最小値を更新
+        document.getElementById('date').addEventListener('change' , function() {  
+            document.getElementById('returnDate').min = this.value;
+        });
 
         document.getElementById('reservationForm').addEventListener('submit', function(e) {
             e.preventDefault();
 
-            const formData = {
+             const formData = {
                 userName: document.getElementById('userName').value,
                 email: document.getElementById('email').value,
                 resource: document.getElementById('resource').value,
                 date: document.getElementById('date').value,
-                time: document.getElementById('time').value,
+                returnDate: document.getElementById('returnDate').value,
                 purpose: document.getElementById('purpose').value
-            };
+             };
 
-            // 予約詳細を表示
+             //日付バリデーション
+             if(new Date(formData.returnDate) < new Date(formData.date)) {
+                alert('返却予定日は利用開始以降を選択してください。');
+                return;
+                
+             }
+
+             // 予約詳細を表示
             const details = `
                 <p><strong>お名前:</strong> ${formData.userName}</p>
                 <p><strong>メール:</strong> ${formData.email}</p>
                 <p><strong>機器:</strong> ${document.getElementById('resource').options[document.getElementById('resource').selectedIndex].text}</p>
-                <p><strong>日付:</strong> ${formData.date}</p>
-                <p><strong>時間:</strong> ${document.getElementById('time').options[document.getElementById('time').selectedIndex].text}</p>
+                <p><strong>利用開始日:</strong> ${formData.date}</p>
+                <p><strong>返却予定日:</strong> ${formData.returnDate}</p>
                 <p><strong>目的:</strong> ${formData.purpose || '未記入'}</p>
                 <p><strong>予約ID:</strong> RES-${Date.now()}</p>
             `;
