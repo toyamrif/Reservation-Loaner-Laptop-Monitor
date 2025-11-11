@@ -86,7 +86,7 @@
 
             <div class="form-group">
                 <label for="resource">予約機器 / Resource Type:</label>
-                <select id="select"required>
+                <select id="resource"required>
                     <option value="">機器を選択してください</option>
 
                     <!--ノートパソコンのオプション-->
@@ -110,8 +110,29 @@
                 </select>
             </div>
 
+            <div class="form-group" id="quantityGroup">
+                <label for="quantity">台数 / Quantity:</option>
+                <select id="quantity" required>
+                    <option value="">台数を選択してください</option>
+                </select>
+            </div>
 
-            <div class="form-group">
+            <div class="form-group" id="comboQuantityGroup" style="display: none;">
+                <label>台数詳細 / Quantity Details:</label>
+                <div style="display: flex; gap: 20px; align-items: center;">
+                    <div>
+                        <label for="amazonQuantity">Amazon Image:</label>
+                        <select id="amazonQuantity">
+                            <option value="0">0台</option>
+                        </select>
+                    </div>
+                    <div>
+                        <strong>合計: <span id="totalQuantity">0</span>台 / 20台</strong>
+                    </div>
+                </div>
+            </div>
+
+            </div>
                 <label for="date">利用日 / Date:</label>
                 <input type="date" id="date" required>
             </div>
@@ -137,6 +158,17 @@
     </div>
 
     <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const resourceSelect = document.getElementById('resorce');
+            console.log('機器選択要素:', resourceSelect);
+
+            if (resourceSelect) {
+                console.log('✔機器選択要素が見つかりました:', thisv.value);
+                });
+            } else {
+                console.error('×機器選択要素が見つかりません');
+            }
+        
         // 今日の日付を最小値として設定
         const today = new Date().toISOString().split('T');
         document.getElementById('date').min = today;
@@ -146,6 +178,102 @@
         document.getElementById('date').addEventListener('change' , function() {  
             document.getElementById('returnDate').min = this.value;
         });
+
+        // 機器が選択された時の処理
+        document.getElementById('resource').addEventListener('change', function() {
+            const selectedResource = this.value;
+            const quantitySelect = this.value;
+            const conboQuantityGroup = document.getElementByid('quantity')
+            const quantityGroup = document.GetElementById('quantityGroup');
+            
+            // 台数選択をクリア
+            quanrtitySelect.interHTML = '<option value="">台数を選択してください</option>';
+
+            if (selectedResource === 'laptop-both') {
+                // コンボ選択の場合
+                quantityGroup.style.display = 'none';
+                comboquantityGroup.style.display = 'block';
+                setupNormalQuantity();
+            } else {
+                // 通常の選択の場合
+                quantityGroup.style.display = 'block';
+                comboquantityGroup.style.display = 'none';
+                setupNormalQuantity(selectedResource);
+            }
+        });
+
+        // 通常の台数設定
+        function setupNormalQuantity(resoureType) {
+            const quantitySelect = document.getElementById('quantity');
+            let maxQuantity = 0;
+
+            if (resoureType.includes('monitor') && !resoureType.includes('set')) {
+                maxQuantity = 10;
+            } else if (resoureType.includes('laptop') && !resoureType.includes('set')) {
+                 maxQuantity = 20;
+            } else if (resoureType.includes('set')) {
+                maxQuantity = 10;    
+            }
+        }
+
+        // コンボ台数設定
+        function setupComboQuantity() {
+            const amazonSelect = document.getElementById('amazonQuantity');
+            const nonAmazonselect = document.getElementById('nonAmazonQuantity');
+
+            amazonSelect.innerHTML = '<option value="0">0台</option>';
+            nonAmazonSelect.innerHTML = '<option value="0">0台</option>';
+
+            for (let i = 1; i <= 20; i++) {
+
+                const amazonOption =document.createElement('option');
+                amazonOption.value = i;
+                amazonOption.textContent = `${i}台`;
+                amazonSelect.appendChild(amazonOption;
+
+
+                const nonAmazonOption = document.createElement('option');
+                nonAmazonOption.value = i;
+                nonAmazonOption.textContent = `${i}台`;
+                nonAmazonselect.appendChild(nonAmazonOption);
+                
+            }
+
+
+            amazonSelect.addEventListener('change', updateComboQuantity);
+            nonAmazonselect.addEventListener('change', updateComboQuantity);
+        }
+
+
+
+        function updateComboQuantity() {
+
+            const amazonQty = parseInt(document.getElementById('amazonQuantity').value) || 0;
+            const nonAmazonQty = parseInt(document.getElementById('nonAmazonQuantity').value) || 0;
+            const total = amazonQty + nonAmazonQty;
+
+
+            document.getElementById('totalQuantity').textContent = total;
+
+
+            const amazonSelect = document.getElementById('amazonQuantity');
+            const nonAmazonSelect = document.getElementById('nonAmazonQuantity');
+
+
+            for (let i = 0; i < amazonSelect.option.length; i++) {
+                const option = amazonSelect.options[i];
+                const value = parseInt(option.value);
+                option.disabled = (value + nonAmazonQty > 20);
+            }
+
+
+            for (let i = 0; i < nonAmazonSelect.options.length; i++) {
+                const option = nonAmazonSelect.option[i];
+                const value = parseInt(option.value);
+                option.disabled = (value + amazonQty > 20);
+
+            }
+        }
 
         document.getElementById('reservationForm').addEventListener('submit', function(e) {
             e.preventDefault();
