@@ -86,7 +86,7 @@
 
             <div class="form-group">
                 <label for="resource">予約機器 / Resource Type:</label>
-                <select id="resource"required>
+                <select id="resource" required>
                     <option value="">機器を選択してください</option>
 
                     <!--ノートパソコンのオプション-->
@@ -111,7 +111,7 @@
             </div>
 
             <div class="form-group" id="quantityGroup">
-                <label for="quantity">台数 / Quantity:</option>
+                <label for="quantity">台数 / Quantity:</label>
                 <select id="quantity" required>
                     <option value="">台数を選択してください</option>
                 </select>
@@ -158,17 +158,6 @@
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const resourceSelect = document.getElementById('resorce');
-            console.log('機器選択要素:', resourceSelect);
-
-            if (resourceSelect) {
-                console.log('✔機器選択要素が見つかりました:', thisv.value);
-                });
-            } else {
-                console.error('×機器選択要素が見つかりません');
-            }
-        
         // 今日の日付を最小値として設定
         const today = new Date().toISOString().split('T');
         document.getElementById('date').min = today;
@@ -182,8 +171,8 @@
         // 機器が選択された時の処理
         document.getElementById('resource').addEventListener('change', function() {
             const selectedResource = this.value;
-            const quantitySelect = this.value;
-            const conboQuantityGroup = document.getElementByid('quantity')
+            const quantitySelect = document.getElementById('quantity');
+            const conboQuantityGroup = document.getElementById('quantity')
             const quantityGroup = document.GetElementById('quantityGroup');
             
             // 台数選択をクリア
@@ -299,6 +288,7 @@
                 <p><strong>お名前:</strong> ${formData.userName}</p>
                 <p><strong>メール:</strong> ${formData.email}</p>
                 <p><strong>機器:</strong> ${document.getElementById('resource').options[document.getElementById('resource').selectedIndex].text}</p>
+                <p><strong>台数:</strong> ${quantityInfo}<p>
                 <p><strong>利用開始日:</strong> ${formData.date}</p>
                 <p><strong>返却予定日:</strong> ${formData.returnDate}</p>
                 <p><strong>目的:</strong> ${formData.purpose || '未記入'}</p>
