@@ -172,8 +172,8 @@
         document.getElementById('resource').addEventListener('change', function() {
             const selectedResource = this.value;
             const quantitySelect = document.getElementById('quantity');
-            const comboQuantityGroup = document.getElementById('quantity')
-            const quantityGroup = document.GetElementById('quantityGroup');
+            const comboQuantityGroup = document.getElementById('comboQuantityGroup')
+            const quantityGroup = document.getElementById('quantityGroup');
             
             // 台数選択をクリア
             quantitySelect.innerHTML = '<option value="">台数を選択してください</option>';
@@ -181,18 +181,18 @@
             if (selectedResource === 'laptop-both') {
                 // コンボ選択の場合
                 quantityGroup.style.display = 'none';
-                comboquantityGroup.style.display = 'block';
+                comboQuantityGroup.style.display = 'block';
                 setupComboQuantity();
             } else {
                 // 通常の選択の場合
                 quantityGroup.style.display = 'block';
-                comboquantityGroup.style.display = 'none';
+                comboQuantityGroup.style.display = 'none';
                 setupNormalQuantity(selectedResource);
             }
         });
 
         // 通常の台数設定
-        function setupNormalQuantity(resoureType) {
+        function setupNormalQuantity(resourceType) {
             const quantitySelect = document.getElementById('quantity');
             let maxQuantity = 0;
 
@@ -203,12 +203,19 @@
             } else if (resoureType.includes('set')) {
                 maxQuantity = 10;    
             }
+
+            for (let i =1; i <= maxQuantity; i++) {
+                const option = document.creationElement('option');
+                option.value = i;
+                option.textContent = `${i}台`;
+                quantitySelect.appendChild(option);
+            }
         }
 
         // コンボ台数設定
         function setupComboQuantity() {
             const amazonSelect = document.getElementById('amazonQuantity');
-            const nonAmazonselect = document.getElementById('nonAmazonQuantity');
+            const nonAmazonSelect = document.getElementById('nonAmazonQuantity');
 
             amazonSelect.innerHTML = '<option value="0">0台</option>';
             nonAmazonSelect.innerHTML = '<option value="0">0台</option>';
@@ -224,7 +231,7 @@
                 const nonAmazonOption = document.createElement('option');
                 nonAmazonOption.value = i;
                 nonAmazonOption.textContent = `${i}台`;
-                nonAmazonselect.appendChild(nonAmazonOption);
+                nonAmazonSelect.appendChild(nonAmazonOption);
                 
             }
 
@@ -257,7 +264,7 @@
 
 
             for (let i = 0; i < nonAmazonSelect.options.length; i++) {
-                const option = nonAmazonSelect.option[i];
+                const option = nonAmazonSelect.options[i];
                 const value = parseInt(option.value);
                 option.disabled = (value + amazonQty > 20);
 
