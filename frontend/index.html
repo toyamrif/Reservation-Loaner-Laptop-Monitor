@@ -172,17 +172,17 @@
         document.getElementById('resource').addEventListener('change', function() {
             const selectedResource = this.value;
             const quantitySelect = document.getElementById('quantity');
-            const conboQuantityGroup = document.getElementById('quantity')
+            const comboQuantityGroup = document.getElementById('quantity')
             const quantityGroup = document.GetElementById('quantityGroup');
             
             // 台数選択をクリア
-            quanrtitySelect.interHTML = '<option value="">台数を選択してください</option>';
+            quantitySelect.innerHTML = '<option value="">台数を選択してください</option>';
 
             if (selectedResource === 'laptop-both') {
                 // コンボ選択の場合
                 quantityGroup.style.display = 'none';
                 comboquantityGroup.style.display = 'block';
-                setupNormalQuantity();
+                setupComboQuantity();
             } else {
                 // 通常の選択の場合
                 quantityGroup.style.display = 'block';
@@ -218,7 +218,7 @@
                 const amazonOption =document.createElement('option');
                 amazonOption.value = i;
                 amazonOption.textContent = `${i}台`;
-                amazonSelect.appendChild(amazonOption;
+                amazonSelect.appendChild(amazonOption);
 
 
                 const nonAmazonOption = document.createElement('option');
@@ -249,7 +249,7 @@
             const nonAmazonSelect = document.getElementById('nonAmazonQuantity');
 
 
-            for (let i = 0; i < amazonSelect.option.length; i++) {
+            for (let i = 0; i < amazonSelect.options.length; i++) {
                 const option = amazonSelect.options[i];
                 const value = parseInt(option.value);
                 option.disabled = (value + nonAmazonQty > 20);
@@ -288,7 +288,7 @@
                 <p><strong>お名前:</strong> ${formData.userName}</p>
                 <p><strong>メール:</strong> ${formData.email}</p>
                 <p><strong>機器:</strong> ${document.getElementById('resource').options[document.getElementById('resource').selectedIndex].text}</p>
-                <p><strong>台数:</strong> ${quantityInfo}<p>
+                <p><strong>台数:</strong> ${quantityInfo}</p>  //
                 <p><strong>利用開始日:</strong> ${formData.date}</p>
                 <p><strong>返却予定日:</strong> ${formData.returnDate}</p>
                 <p><strong>目的:</strong> ${formData.purpose || '未記入'}</p>
