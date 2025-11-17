@@ -1,315 +1,471 @@
+
 <!DOCTYPE html>
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reservation Loaner Laptop Monitor System</title>
+    <title>Loaner Laptop予約システム</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
+        @import url('fonts.googleapis.com/css2?family=Amazon+Ember:wght@300;400;500;700&display=swap');
+        
+        * {
             margin: 0;
-            padding: 20px;
-            background-color: #f5f5f5;
-        }
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            background-color: white;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        .header {
-            text-align: center;
-            color: #232F3E;
-            margin-bottom: 30px;
-        }
-        .form-group {
-            margin-bottom: 20px;
-        }
-        label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-            color: #333;
-        }
-        input, select {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 16px;
+            padding: 0;
             box-sizing: border-box;
         }
-        button {
-            background-color: #FF9900;
-            color: white;
-            padding: 12px 30px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 16px;
+        
+        body {
+            font-family: 'Amazon Ember', 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #32CD32, #00CED1);
+            background-size: 400% 400%;
+            animation: gradientShift 15s ease infinite;
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+        
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        .container {
+            max-width: 700px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+        }
+        
+        h1 {
+            color: #ffffff;
+            text-align: center;
+            margin-bottom: 40px;
+            font-size: 32px;
+            font-weight: 700;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            letter-spacing: 1px;
+        }
+        
+        .form-group {
+            margin-bottom: 25px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 10px;
+            color: #ffffff;
+            font-weight: 500;
+            font-size: 15px;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+        }
+        
+        input[type="text"],
+        input[type="date"],
+        select {
             width: 100%;
+            padding: 14px;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+            font-size: 15px;
+            color: #ffffff;
+            transition: all 0.3s;
+            font-family: 'Amazon Ember', sans-serif;
         }
-        button:hover {
-            background-color: #e68900;
+        
+        input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
         }
-        .result {
-            margin-top: 20px;
-            padding: 15px;
-            background-color: #d4edda;
-            border: 1px solid #c3e6cb;
-            border-radius: 4px;
+        
+        input:focus,
+        select:focus {
+            outline: none;
+            background: rgba(255, 255, 255, 0.25);
+            border-color: rgba(255, 255, 255, 0.5);
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+        }
+        
+        select {
+            cursor: pointer;
+        }
+        
+        select option {
+            background: #1a1a1a;
+            color: #ffffff;
+        }
+        
+        .equipment-section {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(15px);
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+        
+        .equipment-section h3 {
+            color: #ffffff;
+            margin-bottom: 20px;
+            font-size: 20px;
+            font-weight: 600;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+        }
+        
+        .pc-selection {
+            margin-bottom: 20px;
+        }
+        
+        .checkbox-group {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .checkbox-item input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            accent-color: #32CD32;
+        }
+        
+        .checkbox-item label {
+            margin: 0;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .quantity-controls {
             display: none;
+            margin-top: 15px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+        
+        .quantity-controls.active {
+            display: block;
+        }
+        
+        .quantity-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        
+        .quantity-row:last-child {
+            margin-bottom: 0;
+        }
+        
+        .quantity-label {
+            color: #ffffff;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        .quantity-control {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .quantity-control button {
+            width: 35px;
+            height: 35px;
+            border: none;
+            background: rgba(50, 205, 50, 0.8);
+            color: white;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: bold;
+            transition: all 0.3s;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+        
+        .quantity-control button:hover {
+            background: rgba(50, 205, 50, 1);
+            transform: scale(1.1);
+        }
+        
+        .quantity-control button:active {
+            transform: scale(0.95);
+        }
+        
+        .quantity-control span {
+            min-width: 40px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 18px;
+            color: #ffffff;
+        }
+        
+        .monitor-quantity {
+            margin-top: 15px;
+        }
+        
+        .submit-btn {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, rgba(50, 205, 50, 0.9), rgba(0, 206, 209, 0.9));
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 12px;
+            font-size: 17px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .submit-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+        }
+        
+        .submit-btn:active {
+            transform: translateY(0);
+        }
+        
+        .required {
+            color: #ff6b6b;
+        }
+        
+        .info-text {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.7);
+            margin-top: 8px;
+            font-style: italic;
+        }
+        
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            filter: invert(1);
+            cursor: pointer;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <h1>🖥️ Reservation System</h1>
-            <h2>Loaner Laptop & Monitor Booking</h2>
-            <p>社員用機器予約システム</p>
-        </div>
-
+        <h1>🖥️ Loaner Laptop予約システム</h1>
+        
         <form id="reservationForm">
             <div class="form-group">
-                <label for="userName">Alias :</label>
-                <input type="text" id="userName" required placeholder="例: jeff">
+                <label for="alias">Alias <span class="required">*</span></label>
+                <input type="text" id="alias" name="alias" required placeholder="your-alias">
             </div>
-
-            <div class="form-group">
-                <label for="email">メールアドレス / Email:</label>
-                <input type="email" id="email" required placeholder="例: yamada@amazon.com">
-            </div>
-
-
-            <div class="form-group">
-                <label for="resource">予約機器 / Resource Type:</label>
-                <select id="resource" required>
-                    <option value="">機器を選択してください</option>
-
-                    <!--ノートパソコンのオプション-->
-                    <optgroup label="ノートパソコン / laptop">
-                        <option value="laptop-amazon">ノートパソコン (Amazon Image)</option>
-                        <option value="laptop-non-amazon">ノートパソコン (Non-Amazon Image)</option>
-                        <option value="laptop-both">ノートパソコン (両方対応可能)</option>
-                    </optgroup>
+            
+            <div class="equipment-section">
+                <h3>💻 予約機器</h3>
                 
-                    <!--モニターのオプション-->
-                    <optgroup label="外部モニター / Monitor">
-                        <option value="monitor">外部モニター</option>
-                    </optgroup>
-
-                    <!--セット(ラップトップ+モニター)のオプション-->
-                    <optgroup label="セット / Laptop + Monitor Set">
-                        <option value="set-amazon">ラップトップ(Amazon Image) + モニター</option>
-                        <option value="set-non-amazon">ラップトップ(Non-Amazon Image)+ モニター</option>
-                        <option value="set-both">ラップトップ(両方対応可能)</option>
-                    </optgroup>
-                </select>
-            </div>
-
-            <div class="form-group" id="quantityGroup">
-                <label for="quantity">台数 / Quantity:</label>
-                <select id="quantity" required>
-                    <option value="">台数を選択してください</option>
-                </select>
-            </div>
-
-            <div class="form-group" id="comboQuantityGroup" style="display: none;">
-                <label>台数詳細 / Quantity Details:</label>
-                <div style="display: flex; gap: 20px; align-items: center;">
-                    <div>
-                        <label for="amazonQuantity">Amazon Image:</label>
-                        <select id="amazonQuantity">
-                            <option value="0">0台</option>
-                        </select>
+                <div class="pc-selection">
+                    <label>パソコンの種類を選択してください</label>
+                    <div class="checkbox-group">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="nonAmazonPC" onchange="togglePCQuantity()">
+                            <label for="nonAmazonPC">Non-Amazon PC</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="amazonPC" onchange="togglePCQuantity()">
+                            <label for="amazonPC">Amazon PC</label>
+                        </div>
                     </div>
-                    <div>
-                        <strong>合計: <span id="totalQuantity">0</span>台 / 20台</strong>
+                    
+                    <div id="pcQuantityControls" class="quantity-controls">
+                        <div id="nonAmazonRow" class="quantity-row" style="display: none;">
+                            <span class="quantity-label">Non-Amazon PC</span>
+                            <div class="quantity-control">
+                                <button type="button" onclick="decreaseQuantity('nonAmazon')">-</button>
+                                <span id="nonAmazonQuantity">0</span>
+                                <button type="button" onclick="increaseQuantity('nonAmazon')">+</button>
+                            </div>
+                        </div>
+                        <div id="amazonRow" class="quantity-row" style="display: none;">
+                            <span class="quantity-label">Amazon PC</span>
+                            <div class="quantity-control">
+                                <button type="button" onclick="decreaseQuantity('amazon')">-</button>
+                                <span id="amazonQuantity">0</span>
+                                <button type="button" onclick="increaseQuantity('amazon')">+</button>
+                            </div>
+                        </div>
                     </div>
+                    <p class="info-text">パソコン合計: 最大20台まで選択可能</p>
+                </div>
+                
+                <div class="monitor-quantity">
+                    <label>モニター</label>
+                    <div class="quantity-control">
+                        <button type="button" onclick="decreaseQuantity('monitor')">-</button>
+                        <span id="monitorQuantity">0</span>
+                        <button type="button" onclick="increaseQuantity('monitor')">+</button>
+                    </div>
+                    <p class="info-text">最大10台まで選択可能</p>
                 </div>
             </div>
-
-            </div>
-                <label for="date">利用日 / Date:</label>
-                <input type="date" id="date" required>
-            </div>
-
-            <div class="form-group">
-                <label for="returnDate">返却日 / Date:</label>
-                <input type="date" id="returnDate" required>
-            </div>
-
-            <div class="form-group">
-                <label for="purpose">利用目的 / Purpose:</label>
-                <input type="text" id="purpose" placeholder="例: 会議参加、プレゼンテーション等">
-            </div>
-
-            <button type="submit">予約する / Reserve</button>
-        </form>
-
-        <div id="result" class="result">
-            <h3>✅ 予約リクエストを受け付けました！</h3>
-            <div id="reservationDetails"></div>
-            <p><em>※ 現在はデモ版です。Module 2以降でバックエンド機能を追加予定です。</em></p>
-        </div>
-    </div>
-
-    <script>
-        // 今日の日付を最小値として設定
-        const today = new Date().toISOString().split('T');
-        document.getElementById('date').min = today;
-        document.getElementById('returnDate').min = today;
-
-        // 利用開始日が変更されたら、返却日の最小値を更新
-        document.getElementById('date').addEventListener('change' , function() {  
-            document.getElementById('returnDate').min = this.value;
-        });
-
-        // 機器が選択された時の処理
-        document.getElementById('resource').addEventListener('change', function() {
-            const selectedResource = this.value;
-            const quantitySelect = document.getElementById('quantity');
-            const comboQuantityGroup = document.getElementById('comboQuantityGroup')
-            const quantityGroup = document.getElementById('quantityGroup');
             
-            // 台数選択をクリア
-            quantitySelect.innerHTML = '<option value="">台数を選択してください</option>';
-
-            if (selectedResource === 'laptop-both') {
-                // コンボ選択の場合
-                quantityGroup.style.display = 'none';
-                comboQuantityGroup.style.display = 'block';
-                setupComboQuantity();
+            <div class="form-group">
+                <label for="startDate">貸出開始日 <span class="required">*</span></label>
+                <input type="date" id="startDate" name="startDate" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="endDate">返却予定日 <span class="required">*</span></label>
+                <input type="date" id="endDate" name="endDate" required>
+                <p class="info-text">利用期間は最大3ヶ月です</p>
+            </div>
+            
+            <button type="submit" class="submit-btn">予約を送信</button>
+        </form>
+    </div>
+    
+    <script>
+        let nonAmazonCount = 0;
+        let amazonCount = 0;
+        let monitorCount = 0;
+        const MAX_TOTAL_LAPTOPS = 20;
+        const MAX_MONITORS = 10;
+        const MAX_RENTAL_DAYS = 90; // 3ヶ月
+        
+        function togglePCQuantity() {
+            const nonAmazonChecked = document.getElementById('nonAmazonPC').checked;
+            const amazonChecked = document.getElementById('amazonPC').checked;
+            const controls = document.getElementById('pcQuantityControls');
+            const nonAmazonRow = document.getElementById('nonAmazonRow');
+            const amazonRow = document.getElementById('amazonRow');
+            
+            if (nonAmazonChecked || amazonChecked) {
+                controls.classList.add('active');
             } else {
-                // 通常の選択の場合
-                quantityGroup.style.display = 'block';
-                comboQuantityGroup.style.display = 'none';
-                setupNormalQuantity(selectedResource);
+                controls.classList.remove('active');
+                nonAmazonCount = 0;
+                amazonCount = 0;
+                document.getElementById('nonAmazonQuantity').textContent = '0';
+                document.getElementById('amazonQuantity').textContent = '0';
             }
-        });
-
-        // 通常の台数設定
-        function setupNormalQuantity(resourceType) {
-            const quantitySelect = document.getElementById('quantity');
-            let maxQuantity = 0;
-
-            if (resoureType.includes('monitor') && !resoureType.includes('set')) {
-                maxQuantity = 10;
-            } else if (resoureType.includes('laptop') && !resoureType.includes('set')) {
-                 maxQuantity = 20;
-            } else if (resoureType.includes('set')) {
-                maxQuantity = 10;    
+            
+            nonAmazonRow.style.display = nonAmazonChecked ? 'flex' : 'none';
+            amazonRow.style.display = amazonChecked ? 'flex' : 'none';
+            
+            if (!nonAmazonChecked) {
+                nonAmazonCount = 0;
+                document.getElementById('nonAmazonQuantity').textContent = '0';
             }
-
-            for (let i =1; i <= maxQuantity; i++) {
-                const option = document.creationElement('option');
-                option.value = i;
-                option.textContent = `${i}台`;
-                quantitySelect.appendChild(option);
+            if (!amazonChecked) {
+                amazonCount = 0;
+                document.getElementById('amazonQuantity').textContent = '0';
             }
         }
-
-        // コンボ台数設定
-        function setupComboQuantity() {
-            const amazonSelect = document.getElementById('amazonQuantity');
-            const nonAmazonSelect = document.getElementById('nonAmazonQuantity');
-
-            amazonSelect.innerHTML = '<option value="0">0台</option>';
-            nonAmazonSelect.innerHTML = '<option value="0">0台</option>';
-
-            for (let i = 1; i <= 20; i++) {
-
-                const amazonOption =document.createElement('option');
-                amazonOption.value = i;
-                amazonOption.textContent = `${i}台`;
-                amazonSelect.appendChild(amazonOption);
-
-
-                const nonAmazonOption = document.createElement('option');
-                nonAmazonOption.value = i;
-                nonAmazonOption.textContent = `${i}台`;
-                nonAmazonSelect.appendChild(nonAmazonOption);
-                
-            }
-
-
-            amazonSelect.addEventListener('change', updateComboQuantity);
-            nonAmazonselect.addEventListener('change', updateComboQuantity);
-        }
-
-
-
-        function updateComboQuantity() {
-
-            const amazonQty = parseInt(document.getElementById('amazonQuantity').value) || 0;
-            const nonAmazonQty = parseInt(document.getElementById('nonAmazonQuantity').value) || 0;
-            const total = amazonQty + nonAmazonQty;
-
-
-            document.getElementById('totalQuantity').textContent = total;
-
-
-            const amazonSelect = document.getElementById('amazonQuantity');
-            const nonAmazonSelect = document.getElementById('nonAmazonQuantity');
-
-
-            for (let i = 0; i < amazonSelect.options.length; i++) {
-                const option = amazonSelect.options[i];
-                const value = parseInt(option.value);
-                option.disabled = (value + nonAmazonQty > 20);
-            }
-
-
-            for (let i = 0; i < nonAmazonSelect.options.length; i++) {
-                const option = nonAmazonSelect.options[i];
-                const value = parseInt(option.value);
-                option.disabled = (value + amazonQty > 20);
-
+        
+        function increaseQuantity(type) {
+            const totalLaptops = nonAmazonCount + amazonCount;
+            
+            if (type === 'nonAmazon' && totalLaptops < MAX_TOTAL_LAPTOPS) {
+                nonAmazonCount++;
+                document.getElementById('nonAmazonQuantity').textContent = nonAmazonCount;
+            } else if (type === 'amazon' && totalLaptops < MAX_TOTAL_LAPTOPS) {
+                amazonCount++;
+                document.getElementById('amazonQuantity').textContent = amazonCount;
+            } else if (type === 'monitor' && monitorCount < MAX_MONITORS) {
+                monitorCount++;
+                document.getElementById('monitorQuantity').textContent = monitorCount;
+            } else if (type !== 'monitor' && totalLaptops >= MAX_TOTAL_LAPTOPS) {
+                alert('パソコンの合計台数は最大20台までです。');
             }
         }
-
+        
+        function decreaseQuantity(type) {
+            if (type === 'nonAmazon' && nonAmazonCount > 0) {
+                nonAmazonCount--;
+                document.getElementById('nonAmazonQuantity').textContent = nonAmazonCount;
+            } else if (type === 'amazon' && amazonCount > 0) {
+                amazonCount--;
+                document.getElementById('amazonQuantity').textContent = amazonCount;
+            } else if (type === 'monitor' && monitorCount > 0) {
+                monitorCount--;
+                document.getElementById('monitorQuantity').textContent = monitorCount;
+            }
+        }
+        
         document.getElementById('reservationForm').addEventListener('submit', function(e) {
             e.preventDefault();
-
-             const formData = {
-                userName: document.getElementById('userName').value,
-                email: document.getElementById('email').value,
-                resource: document.getElementById('resource').value,
-                date: document.getElementById('date').value,
-                returnDate: document.getElementById('returnDate').value,
-                purpose: document.getElementById('purpose').value
-             };
-
-             //日付バリデーション
-             if(new Date(formData.returnDate) < new Date(formData.date)) {
-                alert('返却予定日は利用開始以降を選択してください。');
+            
+            const totalLaptops = nonAmazonCount + amazonCount;
+            
+            if (totalLaptops === 0 && monitorCount === 0) {
+                alert('少なくとも1つの機器を選択してください。');
                 return;
-                
-             }
+            }
+            
+            const startDate = new Date(document.getElementById('startDate').value);
+            const endDate = new Date(document.getElementById('endDate').value);
+            const daysDiff = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
+            
+            if (daysDiff > MAX_RENTAL_DAYS) {
+                alert('利用期間は最大3ヶ月（90日）までです。');
+                return;
+            }
+            
+            if (daysDiff < 1) {
+                alert('返却予定日は貸出開始日より後の日付を選択してください。');
+                return;
+            }
+            
+            const formData = {
+                alias: document.getElementById('alias').value,
+                nonAmazonPC: nonAmazonCount,
+                amazonPC: amazonCount,
+                monitors: monitorCount,
+                startDate: document.getElementById('startDate').value,
+                endDate: document.getElementById('endDate').value,
+                rentalDays: daysDiff
+            };
+            
+            console.log('予約データ:', formData);
+            
+            let message = '予約が送信されました！
 
-             // 予約詳細を表示
-            const details = `
-                <p><strong>お名前:</strong> ${formData.userName}</p>
-                <p><strong>メール:</strong> ${formData.email}</p>
-                <p><strong>機器:</strong> ${document.getElementById('resource').options[document.getElementById('resource').selectedIndex].text}</p>
-                <p><strong>台数:</strong> ${quantityInfo}</p>  //
-                <p><strong>利用開始日:</strong> ${formData.date}</p>
-                <p><strong>返却予定日:</strong> ${formData.returnDate}</p>
-                <p><strong>目的:</strong> ${formData.purpose || '未記入'}</p>
-                <p><strong>予約ID:</strong> RES-${Date.now()}</p>
-            `;
-
-            document.getElementById('reservationDetails').innerHTML = details;
-            document.getElementById('result').style.display = 'block';
-
-            // フォームをリセット
-            this.reset();
-
-            // 結果までスクロール
-            document.getElementById('result').scrollIntoView({ behavior: 'smooth' });
+';
+            if (nonAmazonCount > 0) message += `Non-Amazon PC: ${nonAmazonCount}台
+`;
+            if (amazonCount > 0) message += `Amazon PC: ${amazonCount}台
+`;
+            if (monitorCount > 0) message += `モニター: ${monitorCount}台
+`;
+            message += `
+利用期間: ${daysDiff}日間`;
+            
+            alert(message);
+            
+            // ここでバックエンドAPIに送信する処理を追加できます
+        });
+        
+        // 今日の日付を最小値として設定
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('startDate').setAttribute('min', today);
+        document.getElementById('endDate').setAttribute('min', today);
+        
+        // 開始日が変更されたら、返却日の最小値と最大値を更新
+        document.getElementById('startDate').addEventListener('change', function() {
+            const startDate = new Date(this.value);
+            document.getElementById('endDate').setAttribute('min', this.value);
+            
+            // 3ヶ月後の日付を計算
+            const maxDate = new Date(startDate);
+            maxDate.setDate(maxDate.getDate() + MAX_RENTAL_DAYS);
+            document.getElementById('endDate').setAttribute('max', maxDate.toISOString().split('T')[0]);
         });
     </script>
 </body>
