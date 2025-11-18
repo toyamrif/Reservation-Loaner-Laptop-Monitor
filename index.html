@@ -1,3 +1,4 @@
+```html
 
 <!DOCTYPE html>
 <html lang="ja">
@@ -275,11 +276,11 @@
                     <label>パソコンの種類を選択してください</label>
                     <div class="checkbox-group">
                         <div class="checkbox-item">
-                            <input type="checkbox" id="nonAmazonPC" onchange="togglePCQuantity()">
+                            <input type="checkbox" id="nonAmazonPC">
                             <label for="nonAmazonPC">Non-Amazon PC</label>
                         </div>
                         <div class="checkbox-item">
-                            <input type="checkbox" id="amazonPC" onchange="togglePCQuantity()">
+                            <input type="checkbox" id="amazonPC">
                             <label for="amazonPC">Amazon PC</label>
                         </div>
                     </div>
@@ -288,17 +289,17 @@
                         <div id="nonAmazonRow" class="quantity-row" style="display: none;">
                             <span class="quantity-label">Non-Amazon PC</span>
                             <div class="quantity-control">
-                                <button type="button" onclick="decreaseQuantity('nonAmazon')">-</button>
+                                <button type="button" data-type="nonAmazon" data-action="decrease">-</button>
                                 <span id="nonAmazonQuantity">0</span>
-                                <button type="button" onclick="increaseQuantity('nonAmazon')">+</button>
+                                <button type="button" data-type="nonAmazon" data-action="increase">+</button>
                             </div>
                         </div>
                         <div id="amazonRow" class="quantity-row" style="display: none;">
                             <span class="quantity-label">Amazon PC</span>
                             <div class="quantity-control">
-                                <button type="button" onclick="decreaseQuantity('amazon')">-</button>
+                                <button type="button" data-type="amazon" data-action="decrease">-</button>
                                 <span id="amazonQuantity">0</span>
-                                <button type="button" onclick="increaseQuantity('amazon')">+</button>
+                                <button type="button" data-type="amazon" data-action="increase">+</button>
                             </div>
                         </div>
                     </div>
@@ -308,9 +309,9 @@
                 <div class="monitor-quantity">
                     <label>モニター</label>
                     <div class="quantity-control">
-                        <button type="button" onclick="decreaseQuantity('monitor')">-</button>
+                        <button type="button" data-type="monitor" data-action="decrease">-</button>
                         <span id="monitorQuantity">0</span>
-                        <button type="button" onclick="increaseQuantity('monitor')">+</button>
+                        <button type="button" data-type="monitor" data-action="increase">+</button>
                     </div>
                     <p class="info-text">最大10台まで選択可能</p>
                 </div>
@@ -337,7 +338,11 @@
         let monitorCount = 0;
         const MAX_TOTAL_LAPTOPS = 20;
         const MAX_MONITORS = 10;
-        const MAX_RENTAL_DAYS = 90; // 3ヶ月
+        const MAX_RENTAL_DAYS = 90;
+        
+        // チェックボックスのイベントリスナー
+        document.getElementById('nonAmazonPC').addEventListener('change', togglePCQuantity);
+        document.getElementById('amazonPC').addEventListener('change', togglePCQuantity);
         
         function togglePCQuantity() {
             const nonAmazonChecked = document.getElementById('nonAmazonPC').checked;
@@ -368,6 +373,21 @@
                 document.getElementById('amazonQuantity').textContent = '0';
             }
         }
+        
+        // すべてのボタンにイベントリスナーを追加
+        document.querySelectorAll('.quantity-control button').forEach(button => {
+            button.addEventListener('click', function(e) {
+                e.preventDefault();
+                const type = this.getAttribute('data-type');
+                const action = this.getAttribute('data-action');
+                
+                if (action === 'increase') {
+                    increaseQuantity(type);
+                } else if (action === 'decrease') {
+                    decreaseQuantity(type);
+                }
+            });
+        });
         
         function increaseQuantity(type) {
             const totalLaptops = nonAmazonCount + amazonCount;
@@ -448,21 +468,16 @@
 利用期間: ${daysDiff}日間`;
             
             alert(message);
-            
-            // ここでバックエンドAPIに送信する処理を追加できます
         });
         
-        // 今日の日付を最小値として設定
         const today = new Date().toISOString().split('T')[0];
         document.getElementById('startDate').setAttribute('min', today);
         document.getElementById('endDate').setAttribute('min', today);
         
-        // 開始日が変更されたら、返却日の最小値と最大値を更新
         document.getElementById('startDate').addEventListener('change', function() {
             const startDate = new Date(this.value);
             document.getElementById('endDate').setAttribute('min', this.value);
             
-            // 3ヶ月後の日付を計算
             const maxDate = new Date(startDate);
             maxDate.setDate(maxDate.getDate() + MAX_RENTAL_DAYS);
             document.getElementById('endDate').setAttribute('max', maxDate.toISOString().split('T')[0]);
@@ -470,3 +485,5 @@
     </script>
 </body>
 </html>
+
+``` Note: Please be mindful when interacting with displayed links.
