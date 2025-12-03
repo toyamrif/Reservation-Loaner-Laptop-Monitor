@@ -298,7 +298,6 @@
                 <div class="form-group">
                     <label>モニター</label>
                     <div class="quantity-control">
-
                         <button type="button" id="monitorMinus">-</button>
                         <span id="monitorQuantity">0</span>
                         <button type="button" id="monitorPlus">+</button>
@@ -306,11 +305,11 @@
                         <button type="button" data-type="monitor" data-action="decrease">-</button>
                         <span id="monitorQuantity">0</span>
                         <button type="button" data-type="monitor" data-action="increase">+</button>
-
-                    </div>
+                    </div>    
+                 </div>
                     <p class="info-text">最大10台まで選択可能</p>
-                </div>
-            </div>
+
+         
             
             <div class="form-group">
                 <label for="startDate">貸出開始日 <span class="required">*</span></label>
@@ -328,7 +327,6 @@
     </div>
     
     <script>
-HEAD
         (function() {
             'use strict';
             
@@ -338,7 +336,27 @@ HEAD
             const MAX_TOTAL_LAPTOPS = 20;
             const MAX_MONITORS = 10;
             const MAX_RENTAL_DAYS = 90;
-            
+
+
+            const monitorPlus = documentById('monitorPlus');
+            const monitorMinus = document.getElementById('monitorMinus');
+            const monitorQuantitySpan = document.getElementById('monitorQuantity');
+
+            monitorPlus.addEventListener('click', function() {
+                if (monitorCount < MAX_MONITORS) {
+                    monitorCount++;
+                    monitorQuantitySpan.testContent = monitorCount;
+                }
+            });
+
+
+            monitorMinus.addEventListener('click', function() {
+                if(monitorCount > 0) {
+                   monitorCount--;
+                   monitorQuantitySpan.textContent = monitorCount;
+                }
+            });
+                
             // 要素の取得
             const nonAmazonCheckbox = document.getElementById('nonAmazonPC');
             const amazonCheckbox = document.getElementById('amazonPC');
