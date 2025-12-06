@@ -49,6 +49,65 @@
             letter-spacing: 1px;
         }
         
+        .progress-bar {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 40px;
+            position: relative;
+        }
+        
+        .progress-bar::before {
+            content: '';
+            position: absolute;
+            top: 15px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: rgba(255, 255, 255, 0.3);
+            z-index: 0;
+        }
+        
+        .progress-step {
+            flex: 1;
+            text-align: center;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .progress-step-circle {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            margin: 0 auto 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ffffff;
+            font-weight: bold;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        
+        .progress-step.active .progress-step-circle {
+            background: rgba(50, 205, 50, 0.9);
+            box-shadow: 0 0 15px rgba(50, 205, 50, 0.6);
+        }
+        
+        .progress-step.completed .progress-step-circle {
+            background: rgba(50, 205, 50, 0.7);
+        }
+        
+        .progress-step-label {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .progress-step.active .progress-step-label {
+            color: #ffffff;
+        }
+        
         .error-message {
             display: none;
             background: rgba(255, 107, 107, 0.9);
@@ -74,6 +133,26 @@
             to {
                 opacity: 1;
                 transform: translateY(0);
+            }
+        }
+        
+        .form-step {
+            display: none;
+        }
+        
+        .form-step.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateX(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
             }
         }
         
@@ -203,11 +282,15 @@
             color: #ffffff;
         }
         
-        .submit-btn {
-            width: 100%;
+        .button-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+        }
+        
+        .btn {
+            flex: 1;
             padding: 16px;
-            background: linear-gradient(135deg, rgba(50, 205, 50, 0.9), rgba(0, 206, 209, 0.9));
-            color: white;
             border: 1px solid rgba(255, 255, 255, 0.3);
             border-radius: 12px;
             font-size: 17px;
@@ -217,14 +300,26 @@
             box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
             text-transform: uppercase;
             letter-spacing: 1px;
+            font-family: 'Amazon Ember', sans-serif;
         }
         
-        .submit-btn:hover {
+        .btn-next,
+        .btn-submit {
+            background: linear-gradient(135deg, rgba(50, 205, 50, 0.9), rgba(0, 206, 209, 0.9));
+            color: white;
+        }
+        
+        .btn-prev {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+        
+        .btn:hover {
             transform: translateY(-3px);
             box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
         }
         
-        .submit-btn:active {
+        .btn:active {
             transform: translateY(0);
         }
         
@@ -249,71 +344,124 @@
     <div class="container">
         <h1>🖥️ Loaner Laptop予約システム</h1>
         
+        <div class="progress-bar">
+            <div class="progress-step active" data-step="1">
+                <div class="progress-step-circle">1</div>
+                <div class="progress-step-label">基本情報</div>
+            </div>
+            <div class="progress-step" data-step="2">
+                <div class="progress-step-circle">2</div>
+                <div class="progress-step-label">機器選択</div>
+            </div>
+            <div class="progress-step" data-step="3">
+                <div class="progress-step-circle">3</div>
+                <div class="progress-step-label">期間設定</div>
+            </div>
+            <div class="progress-step" data-step="4">
+                <div class="progress-step-circle">4</div>
+                <div class="progress-step-label">確認</div>
+            </div>
+        </div>
+        
         <div id="errorMessage" class="error-message"></div>
         
         <form id="reservationForm">
-            <div class="form-group" id="aliasGroup">
-                <label for="alias">Alias <span class="required">*</span></label>
-                <input type="text" id="alias" name="alias" required placeholder="your-alias">
-            </div>
-            
-            <div class="form-group" id="pickupSiteGroup">
-                <label for="pickupSite">Pick Up Site <span class="required">*</span></label>
-                <select id="pickupSite" name="pickupSite" required>
-                    <option value="">選択してください</option>
-                    <option value="HND10">HND10</option>
-                    <option value="HND17">HND17</option>
-                    <option value="HND21">HND21</option>
-                </select>
-            </div>
-            
-            <div class="equipment-section">
-                <h3>💻 予約機器</h3>
-                
-                <div class="quantity-row">
-                    <span class="quantity-label">Non-Amazon PC</span>
-                    <div class="quantity-control">
-                        <button type="button" id="nonAmazonMinus">-</button>
-                        <span id="nonAmazonQuantity">0</span>
-                        <button type="button" id="nonAmazonPlus">+</button>
-                    </div>
+            <!-- Step 1: 基本情報 -->
+            <div class="form-step active" data-step="1">
+                <div class="form-group" id="aliasGroup">
+                    <label for="alias">Alias <span class="required">*</span></label>
+                    <input type="text" id="alias" name="alias" placeholder="your-alias">
                 </div>
                 
-                <div class="quantity-row">
-                    <span class="quantity-label">Amazon PC</span>
-                    <div class="quantity-control">
-                        <button type="button" id="amazonMinus">-</button>
-                        <span id="amazonQuantity">0</span>
-                        <button type="button" id="amazonPlus">+</button>
-                    </div>
+                <div class="form-group" id="pickupSiteGroup">
+                    <label for="pickupSite">Pick Up Site <span class="required">*</span></label>
+                    <select id="pickupSite" name="pickupSite">
+                        <option value="">選択してください</option>
+                        <option value="HND10">HND10</option>
+                        <option value="HND17">HND17</option>
+                        <option value="HND21">HND21</option>
+                    </select>
                 </div>
                 
-                <p class="info-text">パソコン合計: 最大20台まで選択可能</p>
-                
-                <div class="quantity-row" style="margin-top: 20px;">
-                    <span class="quantity-label">モニター</span>
-                    <div class="quantity-control">
-                        <button type="button" id="monitorMinus">-</button>
-                        <span id="monitorQuantity">0</span>
-                        <button type="button" id="monitorPlus">+</button>
+                <div class="button-group">
+                    <button type="button" class="btn btn-next" onclick="nextStep()">次へ</button>
+                </div>
+            </div>
+            
+            <!-- Step 2: 機器選択 -->
+            <div class="form-step" data-step="2">
+                <div class="equipment-section">
+                    <h3>💻 予約機器</h3>
+                    
+                    <div class="quantity-row">
+                        <span class="quantity-label">Non-Amazon PC</span>
+                        <div class="quantity-control">
+                            <button type="button" id="nonAmazonMinus">-</button>
+                            <span id="nonAmazonQuantity">0</span>
+                            <button type="button" id="nonAmazonPlus">+</button>
+                        </div>
                     </div>
+                    
+                    <div class="quantity-row">
+                        <span class="quantity-label">Amazon PC</span>
+                        <div class="quantity-control">
+                            <button type="button" id="amazonMinus">-</button>
+                            <span id="amazonQuantity">0</span>
+                            <button type="button" id="amazonPlus">+</button>
+                        </div>
+                    </div>
+                    
+                    <p class="info-text">パソコン合計: 最大20台まで選択可能</p>
+                    
+                    <div class="quantity-row" style="margin-top: 20px;">
+                        <span class="quantity-label">モニター</span>
+                        <div class="quantity-control">
+                            <button type="button" id="monitorMinus">-</button>
+                            <span id="monitorQuantity">0</span>
+                            <button type="button" id="monitorPlus">+</button>
+                        </div>
+                    </div>
+                    
+                    <p class="info-text">最大10台まで選択可能</p>
                 </div>
                 
-                <p class="info-text">最大10台まで選択可能</p>
+                <div class="button-group">
+                    <button type="button" class="btn btn-prev" onclick="prevStep()">戻る</button>
+                    <button type="button" class="btn btn-next" onclick="nextStep()">次へ</button>
+                </div>
             </div>
             
-            <div class="form-group" id="startDateGroup">
-                <label for="startDate">貸出開始日 <span class="required">*</span></label>
-                <input type="date" id="startDate" name="startDate" required>
+            <!-- Step 3: 期間設定 -->
+            <div class="form-step" data-step="3">
+                <div class="form-group" id="startDateGroup">
+                    <label for="startDate">貸出開始日 <span class="required">*</span></label>
+                    <input type="date" id="startDate" name="startDate">
+                </div>
+                
+                <div class="form-group" id="endDateGroup">
+                    <label for="endDate">返却予定日 <span class="required">*</span></label>
+                    <input type="date" id="endDate" name="endDate">
+                    <p class="info-text">利用期間は最大3ヶ月です</p>
+                </div>
+                
+                <div class="button-group">
+                    <button type="button" class="btn btn-prev" onclick="prevStep()">戻る</button>
+                    <button type="button" class="btn btn-next" onclick="nextStep()">次へ</button>
+                </div>
             </div>
             
-            <div class="form-group" id="endDateGroup">
-                <label for="endDate">返却予定日 <span class="required">*</span></label>
-                <input type="date" id="endDate" name="endDate" required>
-                <p class="info-text">利用期間は最大3ヶ月です</p>
+            <!-- Step 4: 確認 -->
+            <div class="form-step" data-step="4">
+                <div class="equipment-section">
+                    <h3>📋 予約内容の確認</h3>
+                    <div id="confirmationContent"></div>
+                </div>
+                
+                <div class="button-group">
+                    <button type="button" class="btn btn-prev" onclick="prevStep()">戻る</button>
+                    <button type="submit" class="btn btn-submit">予約を送信</button>
+                </div>
             </div>
-            
-            <button type="submit" class="submit-btn">予約を送信</button>
         </form>
     </div>
     
@@ -321,6 +469,7 @@
         (function() {
             'use strict';
             
+            let currentStep = 1;
             let nonAmazonCount = 0;
             let amazonCount = 0;
             let monitorCount = 0;
@@ -369,6 +518,125 @@
             function hideError() {
                 errorMessage.classList.remove('show');
             }
+            
+            function updateProgressBar() {
+                document.querySelectorAll('.progress-step').forEach(function(step) {
+                    const stepNum = parseInt(step.getAttribute('data-step'));
+                    step.classList.remove('active', 'completed');
+                    
+                    if (stepNum === currentStep) {
+                        step.classList.add('active');
+                    } else if (stepNum < currentStep) {
+                        step.classList.add('completed');
+                    }
+                });
+            }
+            
+            function showStep(step) {
+                document.querySelectorAll('.form-step').forEach(function(formStep) {
+                    formStep.classList.remove('active');
+                });
+                
+                const targetStep = document.querySelector('.form-step[data-step="' + step + '"]');
+                if (targetStep) {
+                    targetStep.classList.add('active');
+                }
+                
+                currentStep = step;
+                updateProgressBar();
+                hideError();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+            
+            function validateStep(step) {
+                hideError();
+                
+                if (step === 1) {
+                    if (!aliasInput.value.trim()) {
+                        showError('Aliasを入力してください。', aliasGroup);
+                        return false;
+                    }
+                    
+                    if (!pickupSiteSelect.value) {
+                        showError('Pick Up Siteを選択してください。', pickupSiteGroup);
+                        return false;
+                    }
+                }
+                
+                if (step === 2) {
+                    const totalLaptops = nonAmazonCount + amazonCount;
+                    
+                    if (totalLaptops === 0 && monitorCount === 0) {
+                        showError('少なくとも1つの機器を選択してください。');
+                        return false;
+                    }
+                }
+                
+                if (step === 3) {
+                    if (!startDateInput.value) {
+                        showError('貸出開始日を選択してください。', startDateGroup);
+                        return false;
+                    }
+                    
+                    if (!endDateInput.value) {
+                        showError('返却予定日を選択してください。', endDateGroup);
+                        return false;
+                    }
+                    
+                    const startDate = new Date(startDateInput.value);
+                    const endDate = new Date(endDateInput.value);
+                    const daysDiff = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
+                    
+                    if (daysDiff > MAX_RENTAL_DAYS) {
+                        showError('利用期間は最大3ヶ月（90日）までです。', endDateGroup);
+                        return false;
+                    }
+                    
+                    if (daysDiff < 1) {
+                        showError('返却予定日は貸出開始日より後の日付を選択してください。', endDateGroup);
+                        return false;
+                    }
+                }
+                
+                return true;
+            }
+            
+            function updateConfirmation() {
+                const startDate = new Date(startDateInput.value);
+                const endDate = new Date(endDateInput.value);
+                const daysDiff = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
+                
+                let html = '<div style="color: #ffffff;">';
+                html += '<p style="margin-bottom: 15px;"><strong>Alias:</strong> ' + aliasInput.value + '</p>';
+                html += '<p style="margin-bottom: 15px;"><strong>Pick Up Site:</strong> ' + pickupSiteSelect.value + '</p>';
+                html += '<p style="margin-bottom: 15px;"><strong>予約機器:</strong></p>';
+                html += '<ul style="margin-left: 20px; margin-bottom: 15px;">';
+                if (nonAmazonCount > 0) html += '<li>Non-Amazon PC: ' + nonAmazonCount + '台</li>';
+                if (amazonCount > 0) html += '<li>Amazon PC: ' + amazonCount + '台</li>';
+                if (monitorCount > 0) html += '<li>モニター: ' + monitorCount + '台</li>';
+                html += '</ul>';
+                html += '<p style="margin-bottom: 15px;"><strong>貸出開始日:</strong> ' + startDateInput.value + '</p>';
+                html += '<p style="margin-bottom: 15px;"><strong>返却予定日:</strong> ' + endDateInput.value + '</p>';
+                html += '<p><strong>利用期間:</strong> ' + daysDiff + '日間</p>';
+                html += '</div>';
+                
+                document.getElementById('confirmationContent').innerHTML = html;
+            }
+            
+            window.nextStep = function() {
+                if (validateStep(currentStep)) {
+                    if (currentStep === 3) {
+                        updateConfirmation();
+                    }
+                    showStep(currentStep + 1);
+                }
+            };
+            
+            window.prevStep = function() {
+                if (currentStep > 1) {
+                    showStep(currentStep - 1);
+                }
+            };
             
             nonAmazonPlus.addEventListener('click', function() {
                 const totalLaptops = nonAmazonCount + amazonCount;
@@ -420,48 +688,10 @@
             
             document.getElementById('reservationForm').addEventListener('submit', function(e) {
                 e.preventDefault();
-                hideError();
-                
-                if (!aliasInput.value.trim()) {
-                    showError('Aliasを入力してください。', aliasGroup);
-                    return;
-                }
-                
-                if (!pickupSiteSelect.value) {
-                    showError('Pick Up Siteを選択してください。', pickupSiteGroup);
-                    return;
-                }
-                
-                const totalLaptops = nonAmazonCount + amazonCount;
-                
-                if (totalLaptops === 0 && monitorCount === 0) {
-                    showError('少なくとも1つの機器を選択してください。');
-                    return;
-                }
-                
-                if (!startDateInput.value) {
-                    showError('貸出開始日を選択してください。', startDateGroup);
-                    return;
-                }
-                
-                if (!endDateInput.value) {
-                    showError('返却予定日を選択してください。', endDateGroup);
-                    return;
-                }
                 
                 const startDate = new Date(startDateInput.value);
                 const endDate = new Date(endDateInput.value);
                 const daysDiff = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
-                
-                if (daysDiff > MAX_RENTAL_DAYS) {
-                    showError('利用期間は最大3ヶ月（90日）までです。', endDateGroup);
-                    return;
-                }
-                
-                if (daysDiff < 1) {
-                    showError('返却予定日は貸出開始日より後の日付を選択してください。', endDateGroup);
-                    return;
-                }
                 
                 const formData = {
                     alias: aliasInput.value,
