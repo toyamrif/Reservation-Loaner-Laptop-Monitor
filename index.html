@@ -49,8 +49,42 @@
             letter-spacing: 1px;
         }
         
+        .error-message {
+            display: none;
+            background: rgba(255, 107, 107, 0.9);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+            font-size: 14px;
+            font-weight: 500;
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.4);
+            animation: slideDown 0.3s ease;
+        }
+        
+        .error-message.show {
+            display: block;
+        }
+        
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
         .form-group {
             margin-bottom: 25px;
+        }
+        
+        .form-group.error input,
+        .form-group.error select {
+            border-color: rgba(255, 107, 107, 0.8);
+            background: rgba(255, 107, 107, 0.1);
         }
         
         label {
@@ -215,13 +249,15 @@
     <div class="container">
         <h1>🖥️ Loaner Laptop予約システム</h1>
         
+        <div id="errorMessage" class="error-message"></div>
+        
         <form id="reservationForm">
-            <div class="form-group">
+            <div class="form-group" id="aliasGroup">
                 <label for="alias">Alias <span class="required">*</span></label>
                 <input type="text" id="alias" name="alias" required placeholder="your-alias">
             </div>
             
-            <div class="form-group">
+            <div class="form-group" id="pickupSiteGroup">
                 <label for="pickupSite">Pick Up Site <span class="required">*</span></label>
                 <select id="pickupSite" name="pickupSite" required>
                     <option value="">選択してください</option>
@@ -266,12 +302,12 @@
                 <p class="info-text">最大10台まで選択可能</p>
             </div>
             
-            <div class="form-group">
+            <div class="form-group" id="startDateGroup">
                 <label for="startDate">貸出開始日 <span class="required">*</span></label>
                 <input type="date" id="startDate" name="startDate" required>
             </div>
             
-            <div class="form-group">
+            <div class="form-group" id="endDateGroup">
                 <label for="endDate">返却予定日 <span class="required">*</span></label>
                 <input type="date" id="endDate" name="endDate" required>
                 <p class="info-text">利用期間は最大3ヶ月です</p>
@@ -292,6 +328,16 @@
             const MAX_MONITORS = 10;
             const MAX_RENTAL_DAYS = 90;
             
+            const errorMessage = document.getElementById('errorMessage');
+            const aliasInput = document.getElementById('alias');
+            const aliasGroup = document.getElementById('aliasGroup');
+            const pickupSiteSelect = document.getElementById('pickupSite');
+            const pickupSiteGroup = document.getElementById('pickupSiteGroup');
+            const startDateInput = document.getElementById('startDate');
+            const startDateGroup = document.getElementById('startDateGroup');
+            const endDateInput = document.getElementById('endDate');
+            const endDateGroup = document.getElementById('endDateGroup');
+            
             const nonAmazonMinus = document.getElementById('nonAmazonMinus');
             const nonAmazonPlus = document.getElementById('nonAmazonPlus');
             const nonAmazonQuantitySpan = document.getElementById('nonAmazonQuantity');
@@ -304,13 +350,33 @@
             const monitorPlus = document.getElementById('monitorPlus');
             const monitorQuantitySpan = document.getElementById('monitorQuantity');
             
+            function showError(message, targetElement) {
+                errorMessage.textContent = message;
+                errorMessage.classList.add('show');
+                
+                if (targetElement) {
+                    targetElement.classList.add('error');
+                    targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+                
+                setTimeout(function() {
+                    if (targetElement) {
+                        targetElement.classList.remove('error');
+                    }
+                }, 3000);
+            }
+            
+            function hideError() {
+                errorMessage.classList.remove('show');
+            }
+            
             nonAmazonPlus.addEventListener('click', function() {
                 const totalLaptops = nonAmazonCount + amazonCount;
                 if (totalLaptops < MAX_TOTAL_LAPTOPS) {
                     nonAmazonCount++;
                     nonAmazonQuantitySpan.textContent = nonAmazonCount;
                 } else {
-                    alert('パソコンの合計台数は最大20台までです。');
+                    showError('パソコンの合計台数は最大20台までです。');
                 }
             });
             
@@ -327,7 +393,7 @@
                     amazonCount++;
                     amazonQuantitySpan.textContent = amazonCount;
                 } else {
-                    alert('パソコンの合計台数は最大20台までです。');
+                    showError('パソコンの合計台数は最大20台までです。');
                 }
             });
             
@@ -354,36 +420,57 @@
             
             document.getElementById('reservationForm').addEventListener('submit', function(e) {
                 e.preventDefault();
+                hideError();
+                
+                if (!aliasInput.value.trim()) {
+                    showError('Aliasを入力してください。', aliasGroup);
+                    return;
+                }
+                
+                if (!pickupSiteSelect.value) {
+                    showError('Pick Up Siteを選択してください。', pickupSiteGroup);
+                    return;
+                }
                 
                 const totalLaptops = nonAmazonCount + amazonCount;
                 
                 if (totalLaptops === 0 && monitorCount === 0) {
-                    alert('少なくとも1つの機器を選択してください。');
+                    showError('少なくとも1つの機器を選択してください。');
                     return;
                 }
                 
-                const startDate = new Date(document.getElementById('startDate').value);
-                const endDate = new Date(document.getElementById('endDate').value);
+                if (!startDateInput.value) {
+                    showError('貸出開始日を選択してください。', startDateGroup);
+                    return;
+                }
+                
+                if (!endDateInput.value) {
+                    showError('返却予定日を選択してください。', endDateGroup);
+                    return;
+                }
+                
+                const startDate = new Date(startDateInput.value);
+                const endDate = new Date(endDateInput.value);
                 const daysDiff = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
                 
                 if (daysDiff > MAX_RENTAL_DAYS) {
-                    alert('利用期間は最大3ヶ月（90日）までです。');
+                    showError('利用期間は最大3ヶ月（90日）までです。', endDateGroup);
                     return;
                 }
                 
                 if (daysDiff < 1) {
-                    alert('返却予定日は貸出開始日より後の日付を選択してください。');
+                    showError('返却予定日は貸出開始日より後の日付を選択してください。', endDateGroup);
                     return;
                 }
                 
                 const formData = {
-                    alias: document.getElementById('alias').value,
-                    pickupSite: document.getElementById('pickupSite').value,
+                    alias: aliasInput.value,
+                    pickupSite: pickupSiteSelect.value,
                     nonAmazonPC: nonAmazonCount,
                     amazonPC: amazonCount,
                     monitors: monitorCount,
-                    startDate: document.getElementById('startDate').value,
-                    endDate: document.getElementById('endDate').value,
+                    startDate: startDateInput.value,
+                    endDate: endDateInput.value,
                     rentalDays: daysDiff
                 };
                 
@@ -400,16 +487,16 @@
             });
             
             const today = new Date().toISOString().split('T')[0];
-            document.getElementById('startDate').setAttribute('min', today);
-            document.getElementById('endDate').setAttribute('min', today);
+            startDateInput.setAttribute('min', today);
+            endDateInput.setAttribute('min', today);
             
-            document.getElementById('startDate').addEventListener('change', function() {
+            startDateInput.addEventListener('change', function() {
                 const startDate = new Date(this.value);
-                document.getElementById('endDate').setAttribute('min', this.value);
+                endDateInput.setAttribute('min', this.value);
                 
                 const maxDate = new Date(startDate);
                 maxDate.setDate(maxDate.getDate() + MAX_RENTAL_DAYS);
-                document.getElementById('endDate').setAttribute('max', maxDate.toISOString().split('T')[0]);
+                endDateInput.setAttribute('max', maxDate.toISOString().split('T')[0]);
             });
         })();
     </script>
