@@ -1,3 +1,5 @@
+```html
+
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -26,6 +28,36 @@
             0% { background-position: 0% 50%; }
             50% { background-position: 100% 50%; }
             100% { background-position: 0% 50%; }
+        }
+        
+        .language-selector {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+        
+        .language-selector select {
+            padding: 10px 15px;
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            color: #ffffff;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            font-family: 'Amazon Ember', sans-serif;
+            transition: all 0.3s;
+        }
+        
+        .language-selector select:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        .language-selector select option {
+            background: #1a1a1a;
+            color: #ffffff;
         }
         
         .container {
@@ -341,32 +373,38 @@
     </style>
 </head>
 <body>
+    <div class="language-selector">
+        <select id="languageSelect" onchange="changeLanguage()">
+            <option value="ja">日本語</option>
+            <option value="en">English</option>
+        </select>
+    </div>
+    
     <div class="container">
-        <h1>🖥️ Loaner Laptop予約システム</h1>
+        <h1 id="pageTitle">🖥️ Loaner Laptop予約システム</h1>
         
         <div class="progress-bar">
             <div class="progress-step active" data-step="1">
                 <div class="progress-step-circle">1</div>
-                <div class="progress-step-label">基本情報</div>
+                <div class="progress-step-label" data-lang-ja="基本情報" data-lang-en="Basic Info">基本情報</div>
             </div>
             <div class="progress-step" data-step="2">
                 <div class="progress-step-circle">2</div>
-                <div class="progress-step-label">機器選択</div>
+                <div class="progress-step-label" data-lang-ja="機器選択" data-lang-en="Equipment">機器選択</div>
             </div>
             <div class="progress-step" data-step="3">
                 <div class="progress-step-circle">3</div>
-                <div class="progress-step-label">期間設定</div>
+                <div class="progress-step-label" data-lang-ja="期間設定" data-lang-en="Duration">期間設定</div>
             </div>
             <div class="progress-step" data-step="4">
                 <div class="progress-step-circle">4</div>
-                <div class="progress-step-label">確認</div>
+                <div class="progress-step-label" data-lang-ja="確認" data-lang-en="Confirm">確認</div>
             </div>
         </div>
         
         <div id="errorMessage" class="error-message"></div>
         
         <form id="reservationForm">
-            <!-- Step 1: 基本情報 -->
             <div class="form-step active" data-step="1">
                 <div class="form-group" id="aliasGroup">
                     <label for="alias">Alias <span class="required">*</span></label>
@@ -374,9 +412,9 @@
                 </div>
                 
                 <div class="form-group" id="pickupSiteGroup">
-                    <label for="pickupSite">Pick Up Site <span class="required">*</span></label>
+                    <label for="pickupSite" data-lang-ja="Pick Up Site" data-lang-en="Pick Up Site">Pick Up Site <span class="required">*</span></label>
                     <select id="pickupSite" name="pickupSite">
-                        <option value="">選択してください</option>
+                        <option value="" data-lang-ja="選択してください" data-lang-en="Please select">選択してください</option>
                         <option value="HND10">HND10</option>
                         <option value="HND17">HND17</option>
                         <option value="HND21">HND21</option>
@@ -384,14 +422,13 @@
                 </div>
                 
                 <div class="button-group">
-                    <button type="button" class="btn btn-next" onclick="nextStep()">次へ</button>
+                    <button type="button" class="btn btn-next" onclick="nextStep()" data-lang-ja="次へ" data-lang-en="Next">次へ</button>
                 </div>
             </div>
             
-            <!-- Step 2: 機器選択 -->
             <div class="form-step" data-step="2">
                 <div class="equipment-section">
-                    <h3>💻 予約機器</h3>
+                    <h3 data-lang-ja="💻 予約機器" data-lang-en="💻 Equipment">💻 予約機器</h3>
                     
                     <div class="quantity-row">
                         <span class="quantity-label">Non-Amazon PC</span>
@@ -411,10 +448,10 @@
                         </div>
                     </div>
                     
-                    <p class="info-text">パソコン合計: 最大20台まで選択可能</p>
+                    <p class="info-text" data-lang-ja="パソコン合計: 最大20台まで選択可能" data-lang-en="Total PCs: Maximum 20 units">パソコン合計: 最大20台まで選択可能</p>
                     
                     <div class="quantity-row" style="margin-top: 20px;">
-                        <span class="quantity-label">モニター</span>
+                        <span class="quantity-label" data-lang-ja="モニター" data-lang-en="Monitor">モニター</span>
                         <div class="quantity-control">
                             <button type="button" id="monitorMinus">-</button>
                             <span id="monitorQuantity">0</span>
@@ -422,44 +459,42 @@
                         </div>
                     </div>
                     
-                    <p class="info-text">最大10台まで選択可能</p>
+                    <p class="info-text" data-lang-ja="最大10台まで選択可能" data-lang-en="Maximum 10 units">最大10台まで選択可能</p>
                 </div>
                 
                 <div class="button-group">
-                    <button type="button" class="btn btn-prev" onclick="prevStep()">戻る</button>
-                    <button type="button" class="btn btn-next" onclick="nextStep()">次へ</button>
+                    <button type="button" class="btn btn-prev" onclick="prevStep()" data-lang-ja="戻る" data-lang-en="Back">戻る</button>
+                    <button type="button" class="btn btn-next" onclick="nextStep()" data-lang-ja="次へ" data-lang-en="Next">次へ</button>
                 </div>
             </div>
             
-            <!-- Step 3: 期間設定 -->
             <div class="form-step" data-step="3">
                 <div class="form-group" id="startDateGroup">
-                    <label for="startDate">貸出開始日 <span class="required">*</span></label>
+                    <label for="startDate" data-lang-ja="貸出開始日" data-lang-en="Start Date">貸出開始日 <span class="required">*</span></label>
                     <input type="date" id="startDate" name="startDate">
                 </div>
                 
                 <div class="form-group" id="endDateGroup">
-                    <label for="endDate">返却予定日 <span class="required">*</span></label>
+                    <label for="endDate" data-lang-ja="返却予定日" data-lang-en="Return Date">返却予定日 <span class="required">*</span></label>
                     <input type="date" id="endDate" name="endDate">
-                    <p class="info-text">利用期間は最大3ヶ月です</p>
+                    <p class="info-text" data-lang-ja="利用期間は最大3ヶ月です" data-lang-en="Maximum rental period is 3 months">利用期間は最大3ヶ月です</p>
                 </div>
                 
                 <div class="button-group">
-                    <button type="button" class="btn btn-prev" onclick="prevStep()">戻る</button>
-                    <button type="button" class="btn btn-next" onclick="nextStep()">次へ</button>
+                    <button type="button" class="btn btn-prev" onclick="prevStep()" data-lang-ja="戻る" data-lang-en="Back">戻る</button>
+                    <button type="button" class="btn btn-next" onclick="nextStep()" data-lang-ja="次へ" data-lang-en="Next">次へ</button>
                 </div>
             </div>
             
-            <!-- Step 4: 確認 -->
             <div class="form-step" data-step="4">
                 <div class="equipment-section">
-                    <h3>📋 予約内容の確認</h3>
+                    <h3 data-lang-ja="📋 予約内容の確認" data-lang-en="📋 Confirmation">📋 予約内容の確認</h3>
                     <div id="confirmationContent"></div>
                 </div>
                 
                 <div class="button-group">
-                    <button type="button" class="btn btn-prev" onclick="prevStep()">戻る</button>
-                    <button type="submit" class="btn btn-submit">予約を送信</button>
+                    <button type="button" class="btn btn-prev" onclick="prevStep()" data-lang-ja="戻る" data-lang-en="Back">戻る</button>
+                    <button type="submit" class="btn btn-submit" data-lang-ja="予約を送信" data-lang-en="Submit">予約を送信</button>
                 </div>
             </div>
         </form>
@@ -473,9 +508,51 @@
             let nonAmazonCount = 0;
             let amazonCount = 0;
             let monitorCount = 0;
+            let currentLanguage = 'ja';
             const MAX_TOTAL_LAPTOPS = 20;
             const MAX_MONITORS = 10;
             const MAX_RENTAL_DAYS = 90;
+            
+            const translations = {
+                ja: {
+                    pageTitle: '🖥️ Loaner Laptop予約システム',
+                    aliasRequired: 'Aliasを入力してください。',
+                    pickupSiteRequired: 'Pick Up Siteを選択してください。',
+                    equipmentRequired: '少なくとも1つの機器を選択してください。',
+                    startDateRequired: '貸出開始日を選択してください。',
+                    endDateRequired: '返却予定日を選択してください。',
+                    maxRentalPeriod: '利用期間は最大3ヶ月（90日）までです。',
+                    invalidDateRange: '返却予定日は貸出開始日より後の日付を選択してください。',
+                    maxLaptops: 'パソコンの合計台数は最大20台までです。',
+                    confirmationAlias: 'Alias',
+                    confirmationPickupSite: 'Pick Up Site',
+                    confirmationEquipment: '予約機器',
+                    confirmationStartDate: '貸出開始日',
+                    confirmationEndDate: '返却予定日',
+                    confirmationDuration: '利用期間',
+                    confirmationDays: '日間',
+                    successMessage: '予約が送信されました！'
+                },
+                en: {
+                    pageTitle: '🖥️ Loaner Laptop Reservation System',
+                    aliasRequired: 'Please enter your Alias.',
+                    pickupSiteRequired: 'Please select a Pick Up Site.',
+                    equipmentRequired: 'Please select at least one equipment.',
+                    startDateRequired: 'Please select a start date.',
+                    endDateRequired: 'Please select a return date.',
+                    maxRentalPeriod: 'Maximum rental period is 3 months (90 days).',
+                    invalidDateRange: 'Return date must be after start date.',
+                    maxLaptops: 'Maximum total of 20 PCs allowed.',
+                    confirmationAlias: 'Alias',
+                    confirmationPickupSite: 'Pick Up Site',
+                    confirmationEquipment: 'Equipment',
+                    confirmationStartDate: 'Start Date',
+                    confirmationEndDate: 'Return Date',
+                    confirmationDuration: 'Duration',
+                    confirmationDays: 'days',
+                    successMessage: 'Reservation submitted successfully!'
+                }
+            };
             
             const errorMessage = document.getElementById('errorMessage');
             const aliasInput = document.getElementById('alias');
@@ -499,8 +576,23 @@
             const monitorPlus = document.getElementById('monitorPlus');
             const monitorQuantitySpan = document.getElementById('monitorQuantity');
             
-            function showError(message, targetElement) {
-                errorMessage.textContent = message;
+            window.changeLanguage = function() {
+                currentLanguage = document.getElementById('languageSelect').value;
+                updateLanguage();
+            };
+            
+            function updateLanguage() {
+                document.getElementById('pageTitle').textContent = translations[currentLanguage].pageTitle;
+                
+                document.querySelectorAll('[data-lang-ja]').forEach(function(element) {
+                    const jaText = element.getAttribute('data-lang-ja');
+                    const enText = element.getAttribute('data-lang-en');
+                    element.textContent = currentLanguage === 'ja' ? jaText : enText;
+                });
+            }
+            
+            function showError(messageKey, targetElement) {
+                errorMessage.textContent = translations[currentLanguage][messageKey];
                 errorMessage.classList.add('show');
                 
                 if (targetElement) {
@@ -553,12 +645,12 @@
                 
                 if (step === 1) {
                     if (!aliasInput.value.trim()) {
-                        showError('Aliasを入力してください。', aliasGroup);
+                        showError('aliasRequired', aliasGroup);
                         return false;
                     }
                     
                     if (!pickupSiteSelect.value) {
-                        showError('Pick Up Siteを選択してください。', pickupSiteGroup);
+                        showError('pickupSiteRequired', pickupSiteGroup);
                         return false;
                     }
                 }
@@ -567,19 +659,19 @@
                     const totalLaptops = nonAmazonCount + amazonCount;
                     
                     if (totalLaptops === 0 && monitorCount === 0) {
-                        showError('少なくとも1つの機器を選択してください。');
+                        showError('equipmentRequired');
                         return false;
                     }
                 }
                 
                 if (step === 3) {
                     if (!startDateInput.value) {
-                        showError('貸出開始日を選択してください。', startDateGroup);
+                        showError('startDateRequired', startDateGroup);
                         return false;
                     }
                     
                     if (!endDateInput.value) {
-                        showError('返却予定日を選択してください。', endDateGroup);
+                        showError('endDateRequired', endDateGroup);
                         return false;
                     }
                     
@@ -588,12 +680,12 @@
                     const daysDiff = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
                     
                     if (daysDiff > MAX_RENTAL_DAYS) {
-                        showError('利用期間は最大3ヶ月（90日）までです。', endDateGroup);
+                        showError('maxRentalPeriod', endDateGroup);
                         return false;
                     }
                     
                     if (daysDiff < 1) {
-                        showError('返却予定日は貸出開始日より後の日付を選択してください。', endDateGroup);
+                        showError('invalidDateRange', endDateGroup);
                         return false;
                     }
                 }
@@ -607,17 +699,17 @@
                 const daysDiff = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
                 
                 let html = '<div style="color: #ffffff;">';
-                html += '<p style="margin-bottom: 15px;"><strong>Alias:</strong> ' + aliasInput.value + '</p>';
-                html += '<p style="margin-bottom: 15px;"><strong>Pick Up Site:</strong> ' + pickupSiteSelect.value + '</p>';
-                html += '<p style="margin-bottom: 15px;"><strong>予約機器:</strong></p>';
+                html += '<p style="margin-bottom: 15px;"><strong>' + translations[currentLanguage].confirmationAlias + ':</strong> ' + aliasInput.value + '</p>';
+                html += '<p style="margin-bottom: 15px;"><strong>' + translations[currentLanguage].confirmationPickupSite + ':</strong> ' + pickupSiteSelect.value + '</p>';
+                html += '<p style="margin-bottom: 15px;"><strong>' + translations[currentLanguage].confirmationEquipment + ':</strong></p>';
                 html += '<ul style="margin-left: 20px; margin-bottom: 15px;">';
-                if (nonAmazonCount > 0) html += '<li>Non-Amazon PC: ' + nonAmazonCount + '台</li>';
-                if (amazonCount > 0) html += '<li>Amazon PC: ' + amazonCount + '台</li>';
-                if (monitorCount > 0) html += '<li>モニター: ' + monitorCount + '台</li>';
+                if (nonAmazonCount > 0) html += '<li>Non-Amazon PC: ' + nonAmazonCount + (currentLanguage === 'ja' ? '台' : ' units') + '</li>';
+                if (amazonCount > 0) html += '<li>Amazon PC: ' + amazonCount + (currentLanguage === 'ja' ? '台' : ' units') + '</li>';
+                if (monitorCount > 0) html += '<li>' + (currentLanguage === 'ja' ? 'モニター' : 'Monitor') + ': ' + monitorCount + (currentLanguage === 'ja' ? '台' : ' units') + '</li>';
                 html += '</ul>';
-                html += '<p style="margin-bottom: 15px;"><strong>貸出開始日:</strong> ' + startDateInput.value + '</p>';
-                html += '<p style="margin-bottom: 15px;"><strong>返却予定日:</strong> ' + endDateInput.value + '</p>';
-                html += '<p><strong>利用期間:</strong> ' + daysDiff + '日間</p>';
+                html += '<p style="margin-bottom: 15px;"><strong>' + translations[currentLanguage].confirmationStartDate + ':</strong> ' + startDateInput.value + '</p>';
+                html += '<p style="margin-bottom: 15px;"><strong>' + translations[currentLanguage].confirmationEndDate + ':</strong> ' + endDateInput.value + '</p>';
+                html += '<p><strong>' + translations[currentLanguage].confirmationDuration + ':</strong> ' + daysDiff + ' ' + translations[currentLanguage].confirmationDays + '</p>';
                 html += '</div>';
                 
                 document.getElementById('confirmationContent').innerHTML = html;
@@ -644,55 +736,55 @@
                     nonAmazonCount++;
                     nonAmazonQuantitySpan.textContent = nonAmazonCount;
                 } else {
-                    showError('パソコンの合計台数は最大20台までです。');
+                    showError('maxLaptops');
                 }
             });
-            
+
             nonAmazonMinus.addEventListener('click', function() {
                 if (nonAmazonCount > 0) {
                     nonAmazonCount--;
                     nonAmazonQuantitySpan.textContent = nonAmazonCount;
                 }
             });
-            
+
             amazonPlus.addEventListener('click', function() {
                 const totalLaptops = nonAmazonCount + amazonCount;
                 if (totalLaptops < MAX_TOTAL_LAPTOPS) {
                     amazonCount++;
                     amazonQuantitySpan.textContent = amazonCount;
                 } else {
-                    showError('パソコンの合計台数は最大20台までです。');
+                    showError('maxLaptops');
                 }
             });
-            
+
             amazonMinus.addEventListener('click', function() {
                 if (amazonCount > 0) {
                     amazonCount--;
                     amazonQuantitySpan.textContent = amazonCount;
                 }
             });
-            
+
             monitorPlus.addEventListener('click', function() {
                 if (monitorCount < MAX_MONITORS) {
                     monitorCount++;
                     monitorQuantitySpan.textContent = monitorCount;
                 }
             });
-            
+
             monitorMinus.addEventListener('click', function() {
                 if (monitorCount > 0) {
                     monitorCount--;
                     monitorQuantitySpan.textContent = monitorCount;
                 }
             });
-            
+
             document.getElementById('reservationForm').addEventListener('submit', function(e) {
                 e.preventDefault();
-                
+
                 const startDate = new Date(startDateInput.value);
                 const endDate = new Date(endDateInput.value);
                 const daysDiff = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
-                
+
                 const formData = {
                     alias: aliasInput.value,
                     pickupSite: pickupSiteSelect.value,
@@ -703,32 +795,26 @@
                     endDate: endDateInput.value,
                     rentalDays: daysDiff
                 };
-                
+
                 console.log('予約データ:', formData);
-                
-                let message = '予約が送信されました！';
-                message += 'Pick Up Site: ' + formData.pickupSite + '';
-                if (nonAmazonCount > 0) message += 'Non-Amazon PC: ' + nonAmazonCount + '台';
-                if (amazonCount > 0) message += 'Amazon PC: ' + amazonCount + '台';
-                if (monitorCount > 0) message += 'モニター: ' + monitorCount + '台';
-                message += '利用期間: ' + daysDiff + '日間';
-                
-                alert(message);
+
+                alert(translations[currentLanguage].successMessage);
             });
-            
-            const today = new Date().toISOString().split('T')[0];
+
+            const today = new Date().toISOString().split('T');
             startDateInput.setAttribute('min', today);
             endDateInput.setAttribute('min', today);
-            
+
             startDateInput.addEventListener('change', function() {
                 const startDate = new Date(this.value);
                 endDateInput.setAttribute('min', this.value);
-                
+
                 const maxDate = new Date(startDate);
                 maxDate.setDate(maxDate.getDate() + MAX_RENTAL_DAYS);
-                endDateInput.setAttribute('max', maxDate.toISOString().split('T')[0]);
+                endDateInput.setAttribute('max', maxDate.toISOString().split('T'));
             });
         })();
     </script>
 </body>
 </html>
+
