@@ -263,21 +263,16 @@
                         </div>
                     </div>
                     
-                    <div id="pcQuantityControls" class="quantity-controls hidden">
+                    <div id="pcQuantityControls" class="quantity-controls">
                         <div id="nonAmazonRow" class="quantity-row hidden">
                             <span class="quantity-label">Non-Amazon PC</span>
                             <div class="quantity-control">
-
                                 <button type="button" id="nonAmazonMinus">-</button>
                                 <span id="nonAmazonQuantity">0</span>
                                 <button type="button" id="nonAmazonPlus">+</button>
-
-                                <button type="button" data-type="nonAmazon" data-action="decrease">-</button>
-                                <span id="nonAmazonQuantity">0</span>
-                                <button type="button" data-type="nonAmazon" data-action="increase">+</button>
-                   </div>
+                            </div>
                         </div>
-                        <div id="amazonRow" class="quantity-row hidden">
+                        <div id="amazonRow" class="quantity-row">
                             <span class="quantity-label">Amazon PC</span>
                             <div class="quantity-control">
 
@@ -285,12 +280,8 @@
                                 <span id="amazonQuantity">0</span>
                                 <button type="button" id="amazonPlus">+</button>
 
-                                <button type="button" data-type="amazon" data-action="decrease">-</button>
-                                <span id="amazonQuantity">0</span>
-                                <button type="button" data-type="amazon" data-action="increase">+</button>
-
                             </div>
-                        </div>
+                        </div>`
                     </div>
                     <p class="info-text">パソコン合計: 最大20台まで選択可能</p>
                 </div>
@@ -301,10 +292,6 @@
                         <button type="button" id="monitorMinus">-</button>
                         <span id="monitorQuantity">0</span>
                         <button type="button" id="monitorPlus">+</button>
-
-                        <button type="button" data-type="monitor" data-action="decrease">-</button>
-                        <span id="monitorQuantity">0</span>
-                        <button type="button" data-type="monitor" data-action="increase">+</button>
 
                     </div>
                     </div>    
@@ -339,8 +326,9 @@
             const MAX_MONITORS = 10;
             const MAX_RENTAL_DAYS = 90;
 
-
-            const monitorPlus = documentById('monitorPlus');
+            const nonAmazonPlus = document.getElementById('nonAmazonPlus');
+            const nonAmazonMinus = document.getElementById('nonAmazonMinus');
+            const nonAmazonQuantitySpan = document.getElementById('nonAmazonQuantity');
             const monitorMinus = document.getElementById('monitorMinus');
             const monitorQuantitySpan = document.getElementById('monitorQuantity');
 
