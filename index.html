@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Loaner Laptop予約システム</title>
     <style>
-        @import url('fonts.googleapis.com/css2?family=Amazon+Ember:wght@300;400;500;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Amazon+Ember:wght@300;400;500;700&display=swap');
         
         * {
             margin: 0;
@@ -104,39 +104,6 @@
             text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
         }
         
-        .checkbox-group {
-            display: flex;
-            gap: 20px;
-            margin-bottom: 15px;
-            flex-wrap: wrap;
-        }
-        
-        .checkbox-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .checkbox-item input[type="checkbox"] {
-            width: 20px;
-            height: 20px;
-            cursor: pointer;
-            accent-color: #32CD32;
-        }
-        
-        .checkbox-item label {
-            margin: 0;
-            cursor: pointer;
-            font-size: 14px;
-        }
-        
-        .quantity-controls {
-            margin-top: 15px;
-            padding: 15px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
-        }
-        
         .quantity-row {
             display: flex;
             align-items: center;
@@ -150,7 +117,7 @@
         
         .quantity-label {
             color: #ffffff;
-            font-size: 14px;
+            font-size: 15px;
             font-weight: 500;
         }
         
@@ -231,10 +198,6 @@
             filter: invert(1);
             cursor: pointer;
         }
-        
-        .hidden {
-            display: none;
-        }
     </style>
 </head>
 <body>
@@ -250,55 +213,37 @@
             <div class="equipment-section">
                 <h3>💻 予約機器</h3>
                 
-                <div class="form-group">
-                    <label>パソコンの種類を選択してください</label>
-                    <div class="checkbox-group">
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="nonAmazonPC">
-                            <label for="nonAmazonPC">Non-Amazon PC</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="amazonPC">
-                            <label for="amazonPC">Amazon PC</label>
-                        </div>
+                <div class="quantity-row">
+                    <span class="quantity-label">Non-Amazon PC</span>
+                    <div class="quantity-control">
+                        <button type="button" id="nonAmazonMinus">-</button>
+                        <span id="nonAmazonQuantity">0</span>
+                        <button type="button" id="nonAmazonPlus">+</button>
                     </div>
-                    
-                    <div id="pcQuantityControls" class="quantity-controls">
-                        <div id="nonAmazonRow" class="quantity-row hidden">
-                            <span class="quantity-label">Non-Amazon PC</span>
-                            <div class="quantity-control">
-                                <button type="button" id="nonAmazonMinus">-</button>
-                                <span id="nonAmazonQuantity">0</span>
-                                <button type="button" id="nonAmazonPlus">+</button>
-                            </div>
-                        </div>
-                        <div id="amazonRow" class="quantity-row">
-                            <span class="quantity-label">Amazon PC</span>
-                            <div class="quantity-control">
-
-                                <button type="button" id="amazonMinus">-</button>
-                                <span id="amazonQuantity">0</span>
-                                <button type="button" id="amazonPlus">+</button>
-
-                            </div>
-                        </div>`
-                    </div>
-                    <p class="info-text">パソコン合計: 最大20台まで選択可能</p>
                 </div>
                 
-                <div class="form-group">
-                    <label>モニター</label>
+                <div class="quantity-row">
+                    <span class="quantity-label">Amazon PC</span>
+                    <div class="quantity-control">
+                        <button type="button" id="amazonMinus">-</button>
+                        <span id="amazonQuantity">0</span>
+                        <button type="button" id="amazonPlus">+</button>
+                    </div>
+                </div>
+                
+                <p class="info-text">パソコン合計: 最大20台まで選択可能</p>
+                
+                <div class="quantity-row" style="margin-top: 20px;">
+                    <span class="quantity-label">モニター</span>
                     <div class="quantity-control">
                         <button type="button" id="monitorMinus">-</button>
                         <span id="monitorQuantity">0</span>
                         <button type="button" id="monitorPlus">+</button>
-
                     </div>
-                    </div>    
-                 </div>
-                    <p class="info-text">最大10台まで選択可能</p>
-
-         
+                </div>
+                
+                <p class="info-text">最大10台まで選択可能</p>
+            </div>
             
             <div class="form-group">
                 <label for="startDate">貸出開始日 <span class="required">*</span></label>
@@ -325,43 +270,6 @@
             const MAX_TOTAL_LAPTOPS = 20;
             const MAX_MONITORS = 10;
             const MAX_RENTAL_DAYS = 90;
-
-            const nonAmazonPlus = document.getElementById('nonAmazonPlus');
-            const nonAmazonMinus = document.getElementById('nonAmazonMinus');
-            const nonAmazonQuantitySpan = document.getElementById('nonAmazonQuantity');
-            const monitorMinus = document.getElementById('monitorMinus');
-            const monitorQuantitySpan = document.getElementById('monitorQuantity');
-
-            monitorPlus.addEventListener('click', function() {
-                if (monitorCount < MAX_MONITORS) {
-                    monitorCount++;
-                    monitorQuantitySpan.testContent = monitorCount;
-                }
-            });
-
-
-            monitorMinus.addEventListener('click', function() {
-                if(monitorCount > 0) {
-                   monitorCount--;
-                   monitorQuantitySpan.textContent = monitorCount;
-                }
-            });
-                
-            // 要素の取得
-            const nonAmazonCheckbox = document.getElementById('nonAmazonPC');
-            const amazonCheckbox = document.getElementById('amazonPC');
-            const pcQuantityControls = document.getElementById('pcQuantityControls');
-
-        // チェックボックスのイベントリスナー
-        document.getElementById('nonAmazonPC').addEventListener('change', togglePCQuantity);
-        document.getElementById('amazonPC').addEventListener('change', togglePCQuantity);
-        
-        function togglePCQuantity() {
-            const nonAmazonChecked = document.getElementById('nonAmazonPC').checked;
-            const amazonChecked = document.getElementById('amazonPC').checked;
-            const controls = document.getElementById('pcQuantityControls');
-            const nonAmazonRow = document.getElementById('nonAmazonRow');
-            const amazonRow = document.getElementById('amazonRow');
             
             const nonAmazonMinus = document.getElementById('nonAmazonMinus');
             const nonAmazonPlus = document.getElementById('nonAmazonPlus');
@@ -375,42 +283,6 @@
             const monitorPlus = document.getElementById('monitorPlus');
             const monitorQuantitySpan = document.getElementById('monitorQuantity');
             
-            // チェックボックスのイベント
-            nonAmazonCheckbox.addEventListener('change', updatePCDisplay);
-            amazonCheckbox.addEventListener('change', updatePCDisplay);
-            
-            function updatePCDisplay() {
-                const nonAmazonChecked = nonAmazonCheckbox.checked;
-                const amazonChecked = amazonCheckbox.checked;
-                
-                if (nonAmazonChecked || amazonChecked) {
-                    pcQuantityControls.classList.remove('hidden');
-                } else {
-                    pcQuantityControls.classList.add('hidden');
-                    nonAmazonCount = 0;
-                    amazonCount = 0;
-                    nonAmazonQuantitySpan.textContent = '0';
-                    amazonQuantitySpan.textContent = '0';
-                }
-                
-                if (nonAmazonChecked) {
-                    nonAmazonRow.classList.remove('hidden');
-                } else {
-                    nonAmazonRow.classList.add('hidden');
-                    nonAmazonCount = 0;
-                    nonAmazonQuantitySpan.textContent = '0';
-                }
-                
-                if (amazonChecked) {
-                    amazonRow.classList.remove('hidden');
-                } else {
-                    amazonRow.classList.add('hidden');
-                    amazonCount = 0;
-                    amazonQuantitySpan.textContent = '0';
-                }
-            }
-            
-            // Non-Amazon PCボタン
             nonAmazonPlus.addEventListener('click', function() {
                 const totalLaptops = nonAmazonCount + amazonCount;
                 if (totalLaptops < MAX_TOTAL_LAPTOPS) {
@@ -421,43 +293,13 @@
                 }
             });
             
-
             nonAmazonMinus.addEventListener('click', function() {
                 if (nonAmazonCount > 0) {
                     nonAmazonCount--;
                     nonAmazonQuantitySpan.textContent = nonAmazonCount;
                 }
             });
-
-            if (!nonAmazonChecked) {
-                nonAmazonCount = 0;
-                document.getElementById('nonAmazonQuantity').textContent = '0';
-            }
-            if (!amazonChecked) {
-                amazonCount = 0;
-                document.getElementById('amazonQuantity').textContent = '0';
-            }
-        }
-        
-        // すべてのボタンにイベントリスナーを追加
-        document.querySelectorAll('.quantity-control button').forEach(button => {
-            button.addEventListener('click', function(e) {
-                e.preventDefault();
-                const type = this.getAttribute('data-type');
-                const action = this.getAttribute('data-action');
-                
-                if (action === 'increase') {
-                    increaseQuantity(type);
-                } else if (action === 'decrease') {
-                    decreaseQuantity(type);
-                }
-            });
-        });
-        
-        function increaseQuantity(type) {
-            const totalLaptops = nonAmazonCount + amazonCount;
             
-            // Amazon PCボタン
             amazonPlus.addEventListener('click', function() {
                 const totalLaptops = nonAmazonCount + amazonCount;
                 if (totalLaptops < MAX_TOTAL_LAPTOPS) {
@@ -475,7 +317,6 @@
                 }
             });
             
-            // モニターボタン
             monitorPlus.addEventListener('click', function() {
                 if (monitorCount < MAX_MONITORS) {
                     monitorCount++;
@@ -490,7 +331,6 @@
                 }
             });
             
-            // フォーム送信
             document.getElementById('reservationForm').addEventListener('submit', function(e) {
                 e.preventDefault();
                 
@@ -527,50 +367,28 @@
                 
                 console.log('予約データ:', formData);
                 
-                let message = '予約が送信されました！
-
-';
-if (amazonCount > 0) message += 'Amazon PC: ' + amazonCount + '台
-';
-if (monitorCount > 0) message += 'モニター: ' + monitorCount + '台
-';
-message += '
-利用期間: ' + daysDiff + '日間';
-
-alert(message);
-});
-
-// 日付の設定
-const today = new Date().toISOString().split('T')[0];
-document.getElementById('startDate').setAttribute('min', today);
-document.getElementById('endDate').setAttribute('min', today);
-
-document.getElementById('startDate').addEventListener('change', function() {
-    const startDate = new Date(this.value);
-    document.getElementById('endDate').setAttribute('min', this.value);
-    
-    const maxDate = new Date(startDate);
-    maxDate.setDate(maxDate.getDate() + MAX_RENTAL_DAYS);
-    document.getElementById('endDate').setAttribute('max', maxDate.toISOString().split('T')[0]);
-});
-})();
-
-            alert(message);
-        });
-        
-        const today = new Date().toISOString().split('T')[0];
-        document.getElementById('startDate').setAttribute('min', today);
-        document.getElementById('endDate').setAttribute('min', today);
-        
-        document.getElementById('startDate').addEventListener('change', function() {
-            const startDate = new Date(this.value);
-            document.getElementById('endDate').setAttribute('min', this.value);
+                let message = '予約が送信されました！';
+                if (nonAmazonCount > 0) message += 'Non-Amazon PC: ' + nonAmazonCount + '台';
+                if (amazonCount > 0) message += 'Amazon PC: ' + amazonCount + '台';
+                if (monitorCount > 0) message += 'モニター: ' + monitorCount + '台';
+                message += '利用期間: ' + daysDiff + '日間';
+                
+                alert(message);
+            });
             
-            const maxDate = new Date(startDate);
-            maxDate.setDate(maxDate.getDate() + MAX_RENTAL_DAYS);
-            document.getElementById('endDate').setAttribute('max', maxDate.toISOString().split('T')[0]);
-        });
-
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('startDate').setAttribute('min', today);
+            document.getElementById('endDate').setAttribute('min', today);
+            
+            document.getElementById('startDate').addEventListener('change', function() {
+                const startDate = new Date(this.value);
+                document.getElementById('endDate').setAttribute('min', this.value);
+                
+                const maxDate = new Date(startDate);
+                maxDate.setDate(maxDate.getDate() + MAX_RENTAL_DAYS);
+                document.getElementById('endDate').setAttribute('max', maxDate.toISOString().split('T')[0]);
+            });
+        })();
     </script>
 </body>
 </html>
