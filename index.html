@@ -63,7 +63,8 @@
         }
         
         input[type="text"],
-        input[type="date"] {
+        input[type="date"],
+        select {
             width: 100%;
             padding: 14px;
             background: rgba(255, 255, 255, 0.15);
@@ -80,11 +81,21 @@
             color: rgba(255, 255, 255, 0.6);
         }
         
-        input:focus {
+        input:focus,
+        select:focus {
             outline: none;
             background: rgba(255, 255, 255, 0.25);
             border-color: rgba(255, 255, 255, 0.5);
             box-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+        }
+        
+        select {
+            cursor: pointer;
+        }
+        
+        select option {
+            background: #1a1a1a;
+            color: #ffffff;
         }
         
         .equipment-section {
@@ -208,6 +219,16 @@
             <div class="form-group">
                 <label for="alias">Alias <span class="required">*</span></label>
                 <input type="text" id="alias" name="alias" required placeholder="your-alias">
+            </div>
+            
+            <div class="form-group">
+                <label for="pickupSite">Pick Up Site <span class="required">*</span></label>
+                <select id="pickupSite" name="pickupSite" required>
+                    <option value="">選択してください</option>
+                    <option value="HND10">HND10</option>
+                    <option value="HND17">HND17</option>
+                    <option value="HND21">HND21</option>
+                </select>
             </div>
             
             <div class="equipment-section">
@@ -357,6 +378,7 @@
                 
                 const formData = {
                     alias: document.getElementById('alias').value,
+                    pickupSite: document.getElementById('pickupSite').value,
                     nonAmazonPC: nonAmazonCount,
                     amazonPC: amazonCount,
                     monitors: monitorCount,
@@ -368,6 +390,7 @@
                 console.log('予約データ:', formData);
                 
                 let message = '予約が送信されました！';
+                message += 'Pick Up Site: ' + formData.pickupSite + '';
                 if (nonAmazonCount > 0) message += 'Non-Amazon PC: ' + nonAmazonCount + '台';
                 if (amazonCount > 0) message += 'Amazon PC: ' + amazonCount + '台';
                 if (monitorCount > 0) message += 'モニター: ' + monitorCount + '台';
