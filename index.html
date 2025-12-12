@@ -425,6 +425,7 @@
                     <select id="pickupSite" name="pickupSite">
                         <option value="" data-lang-ja="選択してください" data-lang-en="Please select">選択してください</option>
                         <option value="HND10">HND10</option>
+                        <option value="HND11">HND11</option>
                         <option value="HND17">HND17</option>
                         <option value="HND21">HND21</option>
                     </select>
@@ -536,6 +537,11 @@
                         'Amazon PC': { total: 10, available: 8 },
                         'Monitor': { total: 8, available: 6 }
                     },
+                    'HND11': {
+                        'Non-Amazon PC': { total: 12, available: 10 },
+                        'Amazon PC': { total: 8, available: 6 },
+                        'Monitor': { total: 6, available: 4 }
+                    },
                     'HND17': {
                         'Non-Amazon PC': { total: 12, available: 10 },
                         'Amazon PC': { total: 8, available: 7 },
@@ -585,6 +591,195 @@
             }
             
             let inventory = getInventoryData();
+            
+            // メール通知機能
+            function showEmailNotification(reservationData, successMsg) {
+                // 既存のアラートを非表示にして、カスタムモーダルを表示
+                const emailModal = createEmailModal(reservationData, successMsg);
+                document.body.appendChild(emailModal);
+            }
+            
+            function createEmailModal(reservationData, successMsg) {
+                const modal = document.createElement('div');
+                modal.style.cssText = `
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: rgba(0, 0, 0, 0.8);
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    z-index: 10000;
+                `;
+                
+                const emailContent = generateEmailContent(reservationData);
+                
+                modal.innerHTML = `
+                    <div style="
+                        background: white;
+                        border-radius: 15px;
+                        padding: 30px;
+                        max-width: 600px;
+                        width: 90%;
+                        max-height: 80vh;
+                        overflow-y: auto;
+                        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+                    ">
+                        <h2 style="color: #2c3e50; margin-bottom: 20px; text-align: center;">
+                            📧 予約確認メール
+                        </h2>
+                        
+                        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                            <p style="color: #27ae60; font-weight: bold; margin: 0;">
+                                ${successMsg.split('\\n')[0]}
+                            </p>
+                        </div>
+                        
+                        <div style="margin-bottom: 20px;">
+                            <label style="display: block; margin-bottom: 10px; font-weight: bold; color: #2c3e50;">
+                                📧 送信先メールアドレス:
+                            </label>
+                            <input type="email" id="emailAddress" 
+                                   value="${reservationData.alias}@amazon.co.jp"
+                                   style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px;">
+                        </div>
+                        
+                        <div style="margin-bottom: 20px;">
+                            <label style="display: block; margin-bottom: 10px; font-weight: bold; color: #2c3e50;">
+                                📝 メール内容:
+                            </label>
+                            <textarea id="emailContent" rows="12" style="
+                                width: 100%; 
+                                padding: 15px; 
+                                border: 1px solid #ddd; 
+                                border-radius: 5px; 
+                                font-family: monospace; 
+                                font-size: 13px;
+                                resize: vertical;
+                            ">${emailContent}</textarea>
+                        </div>
+                        
+                        <div style="display: flex; gap: 15px; justify-content: center;">
+                            <button onclick="copyEmailContent()" style="
+                                padding: 12px 25px;
+                                background: #3498db;
+                                color: white;
+                                border: none;
+                                border-radius: 8px;
+                                cursor: pointer;
+                                font-weight: 500;
+                            ">📋 コピー</button>
+                            
+                            <button onclick="openEmailClient('${reservationData.alias}@amazon.co.jp')" style="
+                                padding: 12px 25px;
+                                background: #27ae60;
+                                color: white;
+                                border: none;
+                                border-radius: 8px;
+                                cursor: pointer;
+                                font-weight: 500;
+                            ">📧 メール送信</button>
+                            
+                            <button onclick="closeEmailModal()" style="
+                                padding: 12px 25px;
+                                background: #95a5a6;
+                                color: white;
+                                border: none;
+                                border-radius: 8px;
+                                cursor: pointer;
+                                font-weight: 500;
+                            ">✕ 閉じる</button>
+                        </div>
+                    </div>
+                `;
+                
+                return modal;
+            }
+            
+            function generateEmailContent(reservationData) {
+                const currentDate = new Date().toLocaleDateString('ja-JP');
+                
+                return `件名: 【Loaner Laptop予約システム】予約確認 - ${reservationData.reservationId}
+
+${reservationData.alias} 様
+
+いつもお疲れ様です。
+Loaner Laptop予約システムより、予約確認のご連絡です。
+
+■ 予約詳細
+予約ID: ${reservationData.reservationId}
+利用者: ${reservationData.alias}
+受取サイト: ${reservationData.pickupSite}
+利用期間: ${reservationData.startDate} ～ ${reservationData.endDate} (${reservationData.rentalDays}日間)
+
+■ 予約機器
+${reservationData.nonAmazonPC > 0 ? `・Non-Amazon PC: ${reservationData.nonAmazonPC}台\n` : ''}${reservationData.amazonPC > 0 ? `・Amazon PC: ${reservationData.amazonPC}台\n` : ''}${reservationData.monitors > 0 ? `・モニター: ${reservationData.monitors}台\n` : ''}
+■ 受取場所詳細
+場所: ${reservationData.pickupSite} Pickup Station
+場所が不明な場合は受け取り前に以下をご確認下さい。
+https://w.amazon.com/bin/view/JP-Local-IT/IT_Support_About_Hardware_On_HND10_HND11_HND17/Pick_up_station
+
+■ 受取手順
+Pickup Stationの木棚に予約IDとAliasが記載されたPCをお取りください。
+IT窓口が閉まっている時間帯でも受け取りが可能です。
+身分証明等は不要です。
+
+■ 重要事項
+・機器の準備が完了次第、改めてご連絡いたします
+・利用期間は最大3ヶ月までとなります
+・返却時は必ず返却処理を行ってください
+・機器に問題がある場合は、すぐに受取場所の担当者にご連絡ください
+
+■ Amazon Loaner初回ログインについて
+Amazon Loanerは初回ログイン時は、ログイン前にVPNを接続いただいた上でログインする必要があります。
+方法についてはこちらに記載しております：
+https://it.amazon.com/articles/access/cisco-anyconnect/connect-to-corp-network-before-laptop-login
+
+オフィスにいらっしゃる間にログインを済ませていただくことを推奨しております。
+もし不明点ありましたらITカウンター（Open: 10am - 12pm / 2pm - 5pm）までお聞きください。
+
+■ 返却について
+利用完了後の返却時、laptopは返却用ロッカーをお使いください。
+モニターについては、ピックアップされた時と同じ場所で構いません。
+
+ロッカーの場所や使い方について：
+https://w.amazon.com/bin/view/JP-Local-IT/IT_Support_About_Hardware_On_HND10_HND11_HND17/Return_PC/
+
+■ お問い合わせ
+ご不明な点がございましたら、窓口までお気軽にお声がけください：
+
+予約日時: ${currentDate}
+
+---
+Amazon IT`;
+            }
+            
+            // グローバル関数として定義
+            window.copyEmailContent = function() {
+                const emailContent = document.getElementById('emailContent');
+                emailContent.select();
+                document.execCommand('copy');
+                alert('メール内容をクリップボードにコピーしました！');
+            };
+            
+            window.openEmailClient = function(defaultEmail) {
+                const emailAddress = document.getElementById('emailAddress').value || defaultEmail;
+                const emailContent = document.getElementById('emailContent').value;
+                const subject = emailContent.split('\\n')[0].replace('件名: ', '');
+                const body = emailContent.split('\\n').slice(2).join('\\n');
+                
+                const mailtoLink = `mailto:${emailAddress}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+                window.open(mailtoLink);
+            };
+            
+            window.closeEmailModal = function() {
+                const modal = document.querySelector('div[style*="position: fixed"]');
+                if (modal) {
+                    modal.remove();
+                }
+            };
             
             const translations = {
                 ja: {
@@ -1016,7 +1211,11 @@
                     `• 期間: ${formData.startDate} ～ ${formData.endDate}\n` +
                     `• 機器: Non-Amazon PC ${formData.nonAmazonPC}台, Amazon PC ${formData.amazonPC}台, モニター ${formData.monitors}台`;
                 
-                alert(successMsg);
+                // メール作成機能を表示
+                showEmailNotification(formData, successMsg);
+                
+                // 従来のアラートも表示（バックアップ）
+                // alert(successMsg);
             });
 
             const today = new Date().toISOString().split('T');

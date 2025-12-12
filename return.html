@@ -245,7 +245,8 @@
             // 予約ステータスを更新
             updateReservationStatus(reservationId, 'returned');
             
-            alert('返却処理が完了しました！在庫が復旧されました。');
+            // 返却完了メール通知を表示
+            showReturnEmailNotification(reservation);
             
             // 表示を更新
             showAllReservations();
@@ -374,6 +375,210 @@
             alert('テスト予約を追加しました: ' + testReservation.reservationId);
             showAllReservations();
         }
+        
+        // 返却完了メール通知機能
+        function showReturnEmailNotification(reservation) {
+            const modal = createReturnEmailModal(reservation);
+            document.body.appendChild(modal);
+        }
+        
+        function createReturnEmailModal(reservation) {
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.8);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 10000;
+            `;
+            
+            const emailContent = generateReturnEmailContent(reservation);
+            
+            modal.innerHTML = `
+                <div style="
+                    background: white;
+                    border-radius: 15px;
+                    padding: 30px;
+                    max-width: 600px;
+                    width: 90%;
+                    max-height: 80vh;
+                    overflow-y: auto;
+                    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+                ">
+                    <h2 style="color: #27ae60; margin-bottom: 20px; text-align: center;">
+                        ✅ 返却完了通知メール
+                    </h2>
+                    
+                    <div style="background: #d4edda; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #27ae60;">
+                        <p style="color: #155724; font-weight: bold; margin: 0;">
+                            返却処理が完了しました！在庫が復旧されました。
+                        </p>
+                    </div>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; margin-bottom: 10px; font-weight: bold; color: #2c3e50;">
+                            📧 送信先メールアドレス:
+                        </label>
+                        <input type="email" id="returnEmailAddress" 
+                               value="${reservation.alias}@amazon.co.jp"
+                               style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px;">
+                    </div>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; margin-bottom: 10px; font-weight: bold; color: #2c3e50;">
+                            📝 メール内容:
+                        </label>
+                        <textarea id="returnEmailContent" rows="10" style="
+                            width: 100%; 
+                            padding: 15px; 
+                            border: 1px solid #ddd; 
+                            border-radius: 5px; 
+                            font-family: monospace; 
+                            font-size: 13px;
+                            resize: vertical;
+                        ">${emailContent}</textarea>
+                    </div>
+                    
+                    <div style="display: flex; gap: 15px; justify-content: center;">
+                        <button onclick="copyReturnEmailContent()" style="
+                            padding: 12px 25px;
+                            background: #3498db;
+                            color: white;
+                            border: none;
+                            border-radius: 8px;
+                            cursor: pointer;
+                            font-weight: 500;
+                        ">📋 コピー</button>
+                        
+                        <button onclick="openReturnEmailClient('${reservation.alias}@amazon.co.jp')" style="
+                            padding: 12px 25px;
+                            background: #27ae60;
+                            color: white;
+                            border: none;
+                            border-radius: 8px;
+                            cursor: pointer;
+                            font-weight: 500;
+                        ">📧 メール送信</button>
+                        
+                        <button onclick="closeReturnEmailModal()" style="
+                            padding: 12px 25px;
+                            background: #95a5a6;
+                            color: white;
+                            border: none;
+                            border-radius: 8px;
+                            cursor: pointer;
+                            font-weight: 500;
+                        ">✕ 閉じる</button>
+                    </div>
+                </div>
+            `;
+            
+            return modal;
+        }
+        
+        function generateReturnEmailContent(reservation) {
+            const returnDate = new Date().toLocaleDateString('ja-JP');
+            
+            // Pickup Station の場所情報を取得
+            function getPickupStationInfo(siteId) {
+                const stationInfo = {
+                    'HND10': {
+                        name: 'HND10',
+                        location: 'HND10オフィス 1F ITサポートデスク',
+                        contact: 'HND10-IT@amazon.co.jp'
+                    },
+                    'HND11': {
+                        name: 'HND11',
+                        location: 'HND11オフィス 2F ITサポートデスク',
+                        contact: 'HND11-IT@amazon.co.jp'
+                    },
+                    'HND17': {
+                        name: 'HND17',
+                        location: 'HND17オフィス 1F ITサポートデスク',
+                        contact: 'HND17-IT@amazon.co.jp'
+                    },
+                    'HND21': {
+                        name: 'HND21',
+                        location: 'HND21オフィス 1F 受付',
+                        contact: 'HND21-IT@amazon.co.jp'
+                    }
+                };
+                return stationInfo[siteId] || {
+                    name: siteId,
+                    location: '詳細はITチームまでお問い合わせください',
+                    contact: 'IT-Support@amazon.co.jp'
+                };
+            }
+            
+            const stationInfo = getPickupStationInfo(reservation.pickupSite);
+            
+            return `件名: 【Loaner Laptop予約システム】返却完了確認 - ${reservation.reservationId}
+
+${reservation.alias} 様
+
+いつもお疲れ様です。
+Loaner Laptop予約システムより、返却完了のご連絡です。
+
+■ 返却詳細
+予約ID: ${reservation.reservationId}
+利用者: ${reservation.alias}
+受取サイト: ${stationInfo.name}
+利用期間: ${reservation.startDate} ～ ${reservation.endDate}
+
+■ 返却機器
+${reservation.nonAmazonPC > 0 ? `・Non-Amazon PC: ${reservation.nonAmazonPC}台\n` : ''}${reservation.amazonPC > 0 ? `・Amazon PC: ${reservation.amazonPC}台\n` : ''}${reservation.monitors > 0 ? `・モニター: ${reservation.monitors}台\n` : ''}
+■ 返却完了
+返却日時: ${returnDate}
+返却場所: ${stationInfo.location}
+ステータス: 返却完了
+
+機器の返却処理が正常に完了いたしました。
+ご利用いただき、ありがとうございました。
+
+■ 今後のご利用について
+次回のご利用時も、同じPickup Stationをご利用いただけます。
+場所: ${stationInfo.location}
+連絡先: ${stationInfo.contact}
+
+■ お問い合わせ
+ご不明な点がございましたら、下記までお気軽にお声がけください：
+・返却場所: ${stationInfo.contact}
+・ITチーム: IT-Support@amazon.co.jp
+
+---
+Loaner Laptop予約システム
+ITチーム`;
+        }
+        
+        // グローバル関数として定義
+        window.copyReturnEmailContent = function() {
+            const emailContent = document.getElementById('returnEmailContent');
+            emailContent.select();
+            document.execCommand('copy');
+            alert('メール内容をクリップボードにコピーしました！');
+        };
+        
+        window.openReturnEmailClient = function(defaultEmail) {
+            const emailAddress = document.getElementById('returnEmailAddress').value || defaultEmail;
+            const emailContent = document.getElementById('returnEmailContent').value;
+            const subject = emailContent.split('\\n')[0].replace('件名: ', '');
+            const body = emailContent.split('\\n').slice(2).join('\\n');
+            
+            const mailtoLink = `mailto:${emailAddress}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+            window.open(mailtoLink);
+        };
+        
+        window.closeReturnEmailModal = function() {
+            const modal = document.querySelector('div[style*="position: fixed"]');
+            if (modal) {
+                modal.remove();
+            }
+        };
     </script>
 </body>
 </html>
