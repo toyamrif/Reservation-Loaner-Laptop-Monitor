@@ -701,6 +701,52 @@
             function generateEmailContent(reservationData) {
                 const currentDate = new Date().toLocaleDateString('ja-JP');
                 
+<<<<<<< HEAD
+=======
+                // Pickup Station の場所情報を取得
+                function getPickupStationInfo(siteId) {
+                    const stationInfo = {
+                        'HND10': {
+                            name: 'HND10',
+                            location: 'HND10オフィス 1F ITサポートデスク',
+                            hours: '平日 9:00-18:00',
+                            contact: 'HND10-IT@amazon.co.jp',
+                            notes: 'メインエントランス近くのITサポートデスクにお越しください'
+                        },
+                        'HND11': {
+                            name: 'HND11',
+                            location: 'HND11オフィス 2F ITサポートデスク',
+                            hours: '平日 9:00-18:00',
+                            contact: 'HND11-IT@amazon.co.jp',
+                            notes: 'エレベーター近くのITサポートデスクにお越しください'
+                        },
+                        'HND17': {
+                            name: 'HND17',
+                            location: 'HND17オフィス 1F ITサポートデスク',
+                            hours: '平日 9:00-18:00',
+                            contact: 'HND17-IT@amazon.co.jp',
+                            notes: 'メインロビー近くのITサポートデスクにお越しください'
+                        },
+                        'HND21': {
+                            name: 'HND21',
+                            location: 'HND21オフィス 1F 受付',
+                            hours: '平日 8:00-17:00',
+                            contact: 'HND21-IT@amazon.co.jp',
+                            notes: 'メインエントランス受付にて身分証明書をご提示ください'
+                        }
+                    };
+                    return stationInfo[siteId] || {
+                        name: siteId,
+                        location: '詳細はITチームまでお問い合わせください',
+                        hours: '平日 9:00-18:00',
+                        contact: 'IT-Support@amazon.co.jp',
+                        notes: '受取前にITチームまでご連絡ください'
+                    };
+                }
+                
+                const stationInfo = getPickupStationInfo(reservationData.pickupSite);
+                
+>>>>>>> 4c63cfbac66ca0b05ecef337f3389a66d42dd5cc
                 return `件名: 【Loaner Laptop予約システム】予約確認 - ${reservationData.reservationId}
 
 ${reservationData.alias} 様
@@ -711,12 +757,17 @@ Loaner Laptop予約システムより、予約確認のご連絡です。
 ■ 予約詳細
 予約ID: ${reservationData.reservationId}
 利用者: ${reservationData.alias}
+<<<<<<< HEAD
 受取サイト: ${reservationData.pickupSite}
+=======
+受取サイト: ${stationInfo.name}
+>>>>>>> 4c63cfbac66ca0b05ecef337f3389a66d42dd5cc
 利用期間: ${reservationData.startDate} ～ ${reservationData.endDate} (${reservationData.rentalDays}日間)
 
 ■ 予約機器
 ${reservationData.nonAmazonPC > 0 ? `・Non-Amazon PC: ${reservationData.nonAmazonPC}台\n` : ''}${reservationData.amazonPC > 0 ? `・Amazon PC: ${reservationData.amazonPC}台\n` : ''}${reservationData.monitors > 0 ? `・モニター: ${reservationData.monitors}台\n` : ''}
 ■ 受取場所詳細
+<<<<<<< HEAD
 場所: ${reservationData.pickupSite} Pickup Station
 場所が不明な場合は受け取り前に以下をご確認下さい。
 https://w.amazon.com/bin/view/JP-Local-IT/IT_Support_About_Hardware_On_HND10_HND11_HND17/Pick_up_station
@@ -725,6 +776,18 @@ https://w.amazon.com/bin/view/JP-Local-IT/IT_Support_About_Hardware_On_HND10_HND
 Pickup Stationの木棚に予約IDとAliasが記載されたPCをお取りください。
 IT窓口が閉まっている時間帯でも受け取りが可能です。
 身分証明等は不要です。
+=======
+場所: ${stationInfo.location}
+営業時間: ${stationInfo.hours}
+連絡先: ${stationInfo.contact}
+注意事項: ${stationInfo.notes}
+
+■ 受取手順
+1. 上記営業時間内に受取場所にお越しください
+2. 身分証明書（社員証など）をご持参ください
+3. 予約ID「${reservationData.reservationId}」をお伝えください
+4. 機器の動作確認を行ってからお受け取りください
+>>>>>>> 4c63cfbac66ca0b05ecef337f3389a66d42dd5cc
 
 ■ 重要事項
 ・機器の準備が完了次第、改めてご連絡いたします
@@ -741,19 +804,38 @@ https://it.amazon.com/articles/access/cisco-anyconnect/connect-to-corp-network-b
 もし不明点ありましたらITカウンター（Open: 10am - 12pm / 2pm - 5pm）までお聞きください。
 
 ■ 返却について
+<<<<<<< HEAD
 利用完了後の返却時、laptopは返却用ロッカーをお使いください。
+=======
+利用完了後の返却時、Amazon Loaner laptopは返却用ロッカーをお使いください。
+>>>>>>> 4c63cfbac66ca0b05ecef337f3389a66d42dd5cc
 モニターについては、ピックアップされた時と同じ場所で構いません。
 
 ロッカーの場所や使い方について：
 https://w.amazon.com/bin/view/JP-Local-IT/IT_Support_About_Hardware_On_HND10_HND11_HND17/Return_PC/
 
+<<<<<<< HEAD
 ■ お問い合わせ
 ご不明な点がございましたら、窓口までお気軽にお声がけください：
+=======
+■ Pickup Station詳細情報
+詳細な場所情報: https://w.amazon.com/bin/view/JP-Local-IT/IT_Support_About_Hardware_On_HND10_HND11_HND17/Pick_up_station
+
+■ お問い合わせ
+ご不明な点がございましたら、下記までお気軽にお声がけください：
+・受取場所: ${stationInfo.contact}
+・ITチーム: IT-Support@amazon.co.jp
+>>>>>>> 4c63cfbac66ca0b05ecef337f3389a66d42dd5cc
 
 予約日時: ${currentDate}
 
 ---
+<<<<<<< HEAD
 Amazon IT`;
+=======
+Loaner Laptop予約システム
+ITチーム`;
+>>>>>>> 4c63cfbac66ca0b05ecef337f3389a66d42dd5cc
             }
             
             // グローバル関数として定義
