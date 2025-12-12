@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>返却管理 - Loaner Laptop予約システム</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Amazon+Ember:wght@300;400;500;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Amazon Ember', 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #e74c3c, #f39c12);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 30px;
+        }
+        
+        h1 {
+            color: #ffffff;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 28px;
+            font-weight: 700;
+        }
+        
+        .search-section {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .search-input {
+            width: 100%;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+            color: white;
+            font-size: 16px;
+            margin-bottom: 15px;
+        }
+        
+        .search-input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+        
+        .search-btn {
+            padding: 12px 25px;
+            background: rgba(46, 204, 113, 0.8);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            margin-right: 10px;
+        }
+        
+        .search-btn:hover {
+            background: rgba(46, 204, 113, 1);
+        }
+        
+        .reservation-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .reservation-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .reservation-id {
+            color: #ffffff;
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        .status-badge {
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .status-active {
+            background: rgba(52, 152, 219, 0.8);
+            color: white;
+        }
+        
+        .status-returned {
+            background: rgba(46, 204, 113, 0.8);
+            color: white;
+        }
+        
+        .reservation-details {
+            color: rgba(255, 255, 255, 0.9);
+            margin-bottom: 15px;
+            line-height: 1.6;
+        }
+        
+        .return-btn {
+            padding: 10px 20px;
+            background: rgba(231, 76, 60, 0.8);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+        
+        .return-btn:hover {
+            background: rgba(231, 76, 60, 1);
+        }
+        
+        .return-btn:disabled {
+            background: rgba(149, 165, 166, 0.5);
+            cursor: not-allowed;
+        }
+        
+        .back-link {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+        
+        .back-link:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        .no-reservations {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.8);
+            padding: 40px;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔄 返却管理システム</h1>
+        
+        <div class="search-section">
+            <input type="text" id="searchInput" class="search-input" placeholder="予約ID、Alias、またはサイト名で検索...">
+            <button class="search-btn" onclick="searchReservations()">🔍 検索</button>
+            <button class="search-btn" onclick="showAllReservations()">📋 全て表示</button>
+            <button class="search-btn" onclick="debugLocalStorage()" style="background: rgba(155, 89, 182, 0.8);">🐛 デバッグ</button>
+            <button class="search-btn" onclick="addTestReservation()" style="background: rgba(230, 126, 34, 0.8);">➕ テスト予約追加</button>
+        </div>
+        
+        <div id="reservationsContainer"></div>
+        
+        <a href="index.html" class="back-link">← 予約システムに戻る</a>
+        <a href="admin.html" class="back-link">🛠️ 管理画面</a>
+    </div>
+    
+    <script>
+        // LocalStorageから在庫データと予約データを取得
+        function getInventoryData() {
+            const stored = localStorage.getItem('inventoryData');
+            return stored ? JSON.parse(stored) : {};
+        }
+        
+        function saveInventoryData(inventoryData) {
+            localStorage.setItem('inventoryData', JSON.stringify(inventoryData));
+        }
+        
+        function getReservations() {
+            const stored = localStorage.getItem('reservations');
+            console.log('return.html - getReservations raw data:', stored);
+            const result = stored ? JSON.parse(stored) : [];
+            console.log('return.html - getReservations parsed:', result);
+            return result;
+        }
+        
+        function updateReservationStatus(reservationId, status) {
+            const reservations = getReservations();
+            const reservation = reservations.find(r => r.reservationId === reservationId);
+            if (reservation) {
+                reservation.status = status;
+                reservation.returnedAt = new Date().toISOString();
+                localStorage.setItem('reservations', JSON.stringify(reservations));
+                return reservation;
+            }
+            return null;
+        }
+        
+        function returnEquipment(reservationId) {
+            const reservations = getReservations();
+            const reservation = reservations.find(r => r.reservationId === reservationId);
+            
+            if (!reservation || reservation.status === 'returned') {
+                alert('予約が見つからないか、既に返却済みです。');
+                return;
+            }
+            
+            // 確認ダイアログ
+            const confirmMsg = `以下の機器を返却しますか？\n\n` +
+                `予約ID: ${reservation.reservationId}\n` +
+                `サイト: ${reservation.pickupSite}\n` +
+                `Non-Amazon PC: ${reservation.nonAmazonPC}台\n` +
+                `Amazon PC: ${reservation.amazonPC}台\n` +
+                `モニター: ${reservation.monitors}台`;
+            
+            if (!confirm(confirmMsg)) {
+                return;
+            }
+            
+            // 在庫を復旧
+            const inventory = getInventoryData();
+            if (inventory[reservation.pickupSite]) {
+                inventory[reservation.pickupSite]['Non-Amazon PC'].available += reservation.nonAmazonPC;
+                inventory[reservation.pickupSite]['Amazon PC'].available += reservation.amazonPC;
+                inventory[reservation.pickupSite]['Monitor'].available += reservation.monitors;
+                
+                saveInventoryData(inventory);
+            }
+            
+            // 予約ステータスを更新
+            updateReservationStatus(reservationId, 'returned');
+            
+            alert('返却処理が完了しました！在庫が復旧されました。');
+            
+            // 表示を更新
+            showAllReservations();
+        }
+        
+        function renderReservations(reservations) {
+            const container = document.getElementById('reservationsContainer');
+            
+            if (reservations.length === 0) {
+                container.innerHTML = '<div class="no-reservations">予約データが見つかりません。</div>';
+                return;
+            }
+            
+            let html = '';
+            
+            reservations.forEach(reservation => {
+                const createdDate = new Date(reservation.createdAt).toLocaleDateString('ja-JP');
+                const returnedDate = reservation.returnedAt ? 
+                    new Date(reservation.returnedAt).toLocaleDateString('ja-JP') : '';
+                
+                html += `
+                    <div class="reservation-card">
+                        <div class="reservation-header">
+                            <div class="reservation-id">${reservation.reservationId}</div>
+                            <div class="status-badge ${reservation.status === 'returned' ? 'status-returned' : 'status-active'}">
+                                ${reservation.status === 'returned' ? '返却済み' : '利用中'}
+                            </div>
+                        </div>
+                        <div class="reservation-details">
+                            <strong>👤 利用者:</strong> ${reservation.alias}<br>
+                            <strong>📍 サイト:</strong> ${reservation.pickupSite}<br>
+                            <strong>📅 期間:</strong> ${reservation.startDate} ～ ${reservation.endDate}<br>
+                            <strong>💻 機器:</strong> Non-Amazon PC ${reservation.nonAmazonPC}台, Amazon PC ${reservation.amazonPC}台, モニター ${reservation.monitors}台<br>
+                            <strong>📝 予約日:</strong> ${createdDate}
+                            ${returnedDate ? `<br><strong>🔄 返却日:</strong> ${returnedDate}` : ''}
+                        </div>
+                        ${reservation.status === 'active' ? 
+                            `<button class="return-btn" onclick="returnEquipment('${reservation.reservationId}')">🔄 返却処理</button>` :
+                            `<button class="return-btn" disabled>返却済み</button>`
+                        }
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+        
+        function searchReservations() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const allReservations = getReservations();
+            
+            if (!searchTerm) {
+                showAllReservations();
+                return;
+            }
+            
+            const filteredReservations = allReservations.filter(reservation => 
+                reservation.reservationId.toLowerCase().includes(searchTerm) ||
+                reservation.alias.toLowerCase().includes(searchTerm) ||
+                reservation.pickupSite.toLowerCase().includes(searchTerm)
+            );
+            
+            renderReservations(filteredReservations);
+        }
+        
+        function showAllReservations() {
+            const allReservations = getReservations();
+            // 新しい順にソート
+            allReservations.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+            renderReservations(allReservations);
+        }
+        
+        // 初期表示
+        showAllReservations();
+        
+        // デバッグ: LocalStorageの内容を確認
+        console.log('LocalStorage reservations:', localStorage.getItem('reservations'));
+        console.log('Parsed reservations:', getReservations());
+        
+        // Enterキーで検索
+        document.getElementById('searchInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                searchReservations();
+            }
+        });
+        
+        // デバッグ機能
+        function debugLocalStorage() {
+            const reservations = getReservations();
+            const inventory = getInventoryData();
+            
+            alert(`LocalStorage Debug Info:
+            
+予約データ数: ${reservations.length}
+在庫データ: ${Object.keys(inventory).length} サイト
+
+詳細はコンソールを確認してください。`);
+            
+            console.log('=== LocalStorage Debug ===');
+            console.log('Reservations:', reservations);
+            console.log('Inventory:', inventory);
+            console.log('Raw reservations:', localStorage.getItem('reservations'));
+            console.log('Raw inventory:', localStorage.getItem('inventoryData'));
+        }
+        
+        // テスト予約を手動で追加
+        function addTestReservation() {
+            const testReservation = {
+                reservationId: 'TEST-' + Date.now().toString().slice(-8),
+                alias: 'test-user',
+                pickupSite: 'HND10',
+                nonAmazonPC: 1,
+                amazonPC: 0,
+                monitors: 1,
+                startDate: '2024-12-15',
+                endDate: '2024-12-20',
+                rentalDays: 5,
+                status: 'active',
+                createdAt: new Date().toISOString()
+            };
+            
+            const reservations = getReservations();
+            reservations.push(testReservation);
+            localStorage.setItem('reservations', JSON.stringify(reservations));
+            
+            alert('テスト予約を追加しました: ' + testReservation.reservationId);
+            showAllReservations();
+        }
+    </script>
+</body>
+</html>

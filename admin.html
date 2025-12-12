@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>在庫管理 - 管理画面</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Amazon+Ember:wght@300;400;500;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Amazon Ember', 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #2c3e50, #3498db);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 30px;
+        }
+        
+        h1 {
+            color: #ffffff;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 28px;
+            font-weight: 700;
+        }
+        
+        .nav-buttons {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+            justify-content: center;
+        }
+        
+        .nav-btn {
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+        
+        .nav-btn:hover, .nav-btn.active {
+            background: rgba(52, 152, 219, 0.8);
+        }
+        
+        .section {
+            display: none;
+        }
+        
+        .section.active {
+            display: block;
+        }
+        
+        .site-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .site-title {
+            color: #ffffff;
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+        
+        .equipment-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+        }
+        
+        .equipment-name {
+            color: #ffffff;
+            font-weight: 500;
+        }
+        
+        .equipment-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .inventory-input {
+            width: 60px;
+            padding: 5px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 5px;
+            color: white;
+            text-align: center;
+        }
+        
+        .update-btn {
+            padding: 5px 15px;
+            background: rgba(46, 204, 113, 0.8);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        
+        .update-btn:hover {
+            background: rgba(46, 204, 113, 1);
+        }
+        
+        .back-link {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+        
+        .back-link:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🛠️ 在庫管理システム - 管理画面</h1>
+        
+        <div class="nav-buttons">
+            <button class="nav-btn active" onclick="showSection('inventory')">在庫管理</button>
+            <button class="nav-btn" onclick="showSection('reservations')">予約状況</button>
+            <a href="return.html" class="nav-btn" style="text-decoration: none; display: inline-block;">🔄 返却管理</a>
+        </div>
+        
+        <!-- 在庫管理セクション -->
+        <div id="inventory" class="section active">
+            <div id="inventoryDisplay"></div>
+        </div>
+        
+        <!-- 予約状況セクション -->
+        <div id="reservations" class="section">
+            <div style="color: white; padding: 20px;">
+                <h3 style="text-align: center; margin-bottom: 20px;">📋 予約状況サマリー</h3>
+                <div id="reservationSummary"></div>
+                <div style="text-align: center; margin-top: 20px;">
+                    <a href="return.html" style="padding: 12px 25px; background: rgba(231, 76, 60, 0.8); color: white; text-decoration: none; border-radius: 8px; font-weight: 500;">
+                        🔄 詳細な返却管理画面へ
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <a href="index.html" class="back-link">← 予約システムに戻る</a>
+    </div>
+    
+    <script>
+        // 在庫データ（LocalStorageから読み込み）
+        function getInventoryData() {
+            const stored = localStorage.getItem('inventoryData');
+            if (stored) {
+                return JSON.parse(stored);
+            }
+            
+            // 初期データ
+            const defaultInventory = {
+                'HND10': {
+                    'Non-Amazon PC': { total: 15, available: 12 },
+                    'Amazon PC': { total: 10, available: 8 },
+                    'Monitor': { total: 8, available: 6 }
+                },
+                'HND17': {
+                    'Non-Amazon PC': { total: 12, available: 10 },
+                    'Amazon PC': { total: 8, available: 7 },
+                    'Monitor': { total: 6, available: 5 }
+                },
+                'HND21': {
+                    'Non-Amazon PC': { total: 10, available: 9 },
+                    'Amazon PC': { total: 6, available: 4 },
+                    'Monitor': { total: 5, available: 3 }
+                }
+            };
+            
+            saveInventoryData(defaultInventory);
+            return defaultInventory;
+        }
+        
+        function saveInventoryData(inventoryData) {
+            localStorage.setItem('inventoryData', JSON.stringify(inventoryData));
+        }
+        
+        let inventory = getInventoryData();
+        
+        function showSection(sectionName) {
+            // 全セクションを非表示
+            document.querySelectorAll('.section').forEach(section => {
+                section.classList.remove('active');
+            });
+            
+            // 全ボタンを非アクティブ
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // 選択されたセクションを表示
+            document.getElementById(sectionName).classList.add('active');
+            if (event && event.target) {
+                event.target.classList.add('active');
+            }
+            
+            // 予約状況セクションの場合はサマリーを更新
+            if (sectionName === 'reservations') {
+                updateReservationSummary();
+            }
+        }
+        
+        function getReservations() {
+            const stored = localStorage.getItem('reservations');
+            return stored ? JSON.parse(stored) : [];
+        }
+        
+        function updateReservationSummary() {
+            const reservations = getReservations();
+            const activeReservations = reservations.filter(r => r.status === 'active');
+            const returnedReservations = reservations.filter(r => r.status === 'returned');
+            
+            let html = `
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 20px;">
+                    <div style="background: rgba(52, 152, 219, 0.2); padding: 20px; border-radius: 10px; text-align: center;">
+                        <h4 style="margin-bottom: 10px;">📊 総予約数</h4>
+                        <div style="font-size: 24px; font-weight: bold;">${reservations.length}</div>
+                    </div>
+                    <div style="background: rgba(231, 76, 60, 0.2); padding: 20px; border-radius: 10px; text-align: center;">
+                        <h4 style="margin-bottom: 10px;">🔄 利用中</h4>
+                        <div style="font-size: 24px; font-weight: bold;">${activeReservations.length}</div>
+                    </div>
+                    <div style="background: rgba(46, 204, 113, 0.2); padding: 20px; border-radius: 10px; text-align: center;">
+                        <h4 style="margin-bottom: 10px;">✅ 返却済み</h4>
+                        <div style="font-size: 24px; font-weight: bold;">${returnedReservations.length}</div>
+                    </div>
+                </div>
+            `;
+            
+            if (activeReservations.length > 0) {
+                html += '<h4 style="margin-bottom: 15px;">🔄 現在利用中の予約（最新5件）</h4>';
+                activeReservations.slice(0, 5).forEach(reservation => {
+                    html += `
+                        <div style="background: rgba(255, 255, 255, 0.1); padding: 15px; margin-bottom: 10px; border-radius: 8px;">
+                            <strong>${reservation.reservationId}</strong> - ${reservation.alias} (${reservation.pickupSite})<br>
+                            <small>期間: ${reservation.startDate} ～ ${reservation.endDate}</small>
+                        </div>
+                    `;
+                });
+            }
+            
+            document.getElementById('reservationSummary').innerHTML = html;
+        }
+        
+        function renderInventory() {
+            const container = document.getElementById('inventoryDisplay');
+            let html = '';
+            
+            for (let siteId in inventory) {
+                html += `
+                    <div class="site-card">
+                        <div class="site-title">📍 ${siteId}</div>
+                `;
+                
+                for (let equipmentType in inventory[siteId]) {
+                    const equipment = inventory[siteId][equipmentType];
+                    html += `
+                        <div class="equipment-row">
+                            <span class="equipment-name">${equipmentType}</span>
+                            <div class="equipment-controls">
+                                <span style="color: rgba(255,255,255,0.8);">利用可能:</span>
+                                <input type="number" class="inventory-input" 
+                                       value="${equipment.available}" 
+                                       min="0" max="${equipment.total}"
+                                       onchange="updateInventory('${siteId}', '${equipmentType}', 'available', this.value)">
+                                <span style="color: rgba(255,255,255,0.8);">/ ${equipment.total}台</span>
+                                <button class="update-btn" onclick="updateTotal('${siteId}', '${equipmentType}')">総数変更</button>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                html += '</div>';
+            }
+            
+            container.innerHTML = html;
+        }
+        
+        function updateInventory(siteId, equipmentType, field, value) {
+            const numValue = parseInt(value);
+            if (numValue >= 0 && numValue <= inventory[siteId][equipmentType].total) {
+                inventory[siteId][equipmentType][field] = numValue;
+                saveInventoryData(inventory); // LocalStorageに保存
+                console.log(`${siteId} ${equipmentType} ${field} を ${numValue} に更新`);
+            } else {
+                alert('無効な値です。0以上、総数以下の値を入力してください。');
+                renderInventory(); // 元の値に戻す
+            }
+        }
+        
+        function updateTotal(siteId, equipmentType) {
+            const newTotal = prompt(`${siteId} ${equipmentType} の総数を入力してください:`, 
+                                   inventory[siteId][equipmentType].total);
+            
+            if (newTotal !== null) {
+                const numTotal = parseInt(newTotal);
+                if (numTotal >= 0) {
+                    inventory[siteId][equipmentType].total = numTotal;
+                    // 利用可能数が総数を超えないように調整
+                    if (inventory[siteId][equipmentType].available > numTotal) {
+                        inventory[siteId][equipmentType].available = numTotal;
+                    }
+                    saveInventoryData(inventory); // LocalStorageに保存
+                    renderInventory();
+                }
+            }
+        }
+        
+        // 初期表示
+        renderInventory();
+    </script>
+</body>
+</html>

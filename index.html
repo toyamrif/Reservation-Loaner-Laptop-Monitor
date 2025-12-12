@@ -380,6 +380,15 @@
         </select>
     </div>
     
+    <div style="position: fixed; top: 20px; left: 20px; z-index: 1000; display: flex; flex-direction: column; gap: 10px;">
+        <a href="admin.html" style="padding: 10px 15px; background: rgba(255, 255, 255, 0.2); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 8px; color: #ffffff; text-decoration: none; font-size: 14px; font-weight: 500; transition: all 0.3s;">
+            🛠️ 管理画面
+        </a>
+        <a href="return.html" style="padding: 10px 15px; background: rgba(255, 255, 255, 0.2); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 8px; color: #ffffff; text-decoration: none; font-size: 14px; font-weight: 500; transition: all 0.3s;">
+            🔄 返却管理
+        </a>
+    </div>
+    
     <div class="container">
         <h1 id="pageTitle">🖥️ Loaner Laptop予約システム</h1>
         
@@ -513,6 +522,70 @@
             const MAX_MONITORS = 10;
             const MAX_RENTAL_DAYS = 90;
             
+            // 在庫管理データ（LocalStorageから読み込み）
+            function getInventoryData() {
+                const stored = localStorage.getItem('inventoryData');
+                if (stored) {
+                    return JSON.parse(stored);
+                }
+                
+                // 初期データ
+                const defaultInventory = {
+                    'HND10': {
+                        'Non-Amazon PC': { total: 15, available: 12 },
+                        'Amazon PC': { total: 10, available: 8 },
+                        'Monitor': { total: 8, available: 6 }
+                    },
+                    'HND17': {
+                        'Non-Amazon PC': { total: 12, available: 10 },
+                        'Amazon PC': { total: 8, available: 7 },
+                        'Monitor': { total: 6, available: 5 }
+                    },
+                    'HND21': {
+                        'Non-Amazon PC': { total: 10, available: 9 },
+                        'Amazon PC': { total: 6, available: 4 },
+                        'Monitor': { total: 5, available: 3 }
+                    }
+                };
+                
+                saveInventoryData(defaultInventory);
+                return defaultInventory;
+            }
+            
+            function saveInventoryData(inventoryData) {
+                localStorage.setItem('inventoryData', JSON.stringify(inventoryData));
+            }
+            
+            // 予約データ管理
+            function getReservations() {
+                const stored = localStorage.getItem('reservations');
+                console.log('getReservations - raw stored data:', stored);
+                const result = stored ? JSON.parse(stored) : [];
+                console.log('getReservations - parsed result:', result);
+                return result;
+            }
+            
+            function saveReservation(reservationData) {
+                console.log('saveReservation called with:', reservationData);
+                const reservations = getReservations();
+                console.log('Current reservations before save:', reservations);
+                reservations.push(reservationData);
+                console.log('Reservations after push:', reservations);
+                localStorage.setItem('reservations', JSON.stringify(reservations));
+                console.log('Saved to localStorage. Verification:', localStorage.getItem('reservations'));
+            }
+            
+            function updateReservationStatus(reservationId, status) {
+                const reservations = getReservations();
+                const reservation = reservations.find(r => r.reservationId === reservationId);
+                if (reservation) {
+                    reservation.status = status;
+                    localStorage.setItem('reservations', JSON.stringify(reservations));
+                }
+            }
+            
+            let inventory = getInventoryData();
+            
             const translations = {
                 ja: {
                     pageTitle: '🖥️ Loaner Laptop予約システム',
@@ -531,7 +604,9 @@
                     confirmationEndDate: '返却予定日',
                     confirmationDuration: '利用期間',
                     confirmationDays: '日間',
-                    successMessage: '予約が送信されました！'
+                    successMessage: '予約が送信されました！',
+                    inventoryShortage: '在庫不足のため予約できません',
+                    alternativeSuggestion: '代替案をご確認ください'
                 },
                 en: {
                     pageTitle: '🖥️ Loaner Laptop Reservation System',
@@ -550,7 +625,9 @@
                     confirmationEndDate: 'Return Date',
                     confirmationDuration: 'Duration',
                     confirmationDays: 'days',
-                    successMessage: 'Reservation submitted successfully!'
+                    successMessage: 'Reservation submitted successfully!',
+                    inventoryShortage: 'Cannot reserve due to insufficient inventory',
+                    alternativeSuggestion: 'Please check alternative options'
                 }
             };
             
@@ -559,6 +636,24 @@
             const aliasGroup = document.getElementById('aliasGroup');
             const pickupSiteSelect = document.getElementById('pickupSite');
             const pickupSiteGroup = document.getElementById('pickupSiteGroup');
+            
+            // サイト選択時の在庫表示
+            pickupSiteSelect.addEventListener('change', function() {
+                const existingInventoryDisplay = document.getElementById('inventoryDisplay');
+                if (existingInventoryDisplay) {
+                    existingInventoryDisplay.remove();
+                }
+                
+                if (this.value) {
+                    const inventoryHTML = displayInventoryStatus(this.value);
+                    if (inventoryHTML) {
+                        const inventoryDiv = document.createElement('div');
+                        inventoryDiv.id = 'inventoryDisplay';
+                        inventoryDiv.innerHTML = inventoryHTML;
+                        pickupSiteGroup.appendChild(inventoryDiv);
+                    }
+                }
+            });
             const startDateInput = document.getElementById('startDate');
             const startDateGroup = document.getElementById('startDateGroup');
             const endDateInput = document.getElementById('endDate');
@@ -611,6 +706,66 @@
                 errorMessage.classList.remove('show');
             }
             
+            // 在庫確認機能
+            function checkInventoryAvailability(siteId, nonAmazonCount, amazonCount, monitorCount) {
+                if (!inventory[siteId]) return { available: false, reason: 'サイトが見つかりません' };
+                
+                const site = inventory[siteId];
+                const checks = [
+                    { type: 'Non-Amazon PC', requested: nonAmazonCount, available: site['Non-Amazon PC'].available },
+                    { type: 'Amazon PC', requested: amazonCount, available: site['Amazon PC'].available },
+                    { type: 'Monitor', requested: monitorCount, available: site['Monitor'].available }
+                ];
+                
+                for (let check of checks) {
+                    if (check.requested > check.available) {
+                        return { 
+                            available: false, 
+                            reason: `${check.type}の在庫不足 (要求: ${check.requested}, 利用可能: ${check.available})`,
+                            shortage: { type: check.type, requested: check.requested, available: check.available }
+                        };
+                    }
+                }
+                
+                return { available: true };
+            }
+            
+            // 代替案提案機能
+            function suggestAlternatives(originalSite, nonAmazonCount, amazonCount, monitorCount) {
+                const alternatives = [];
+                
+                for (let siteId in inventory) {
+                    if (siteId === originalSite) continue;
+                    
+                    const availability = checkInventoryAvailability(siteId, nonAmazonCount, amazonCount, monitorCount);
+                    if (availability.available) {
+                        alternatives.push({
+                            site: siteId,
+                            message: `${siteId}では全ての機器が利用可能です`
+                        });
+                    }
+                }
+                
+                return alternatives;
+            }
+            
+            // 在庫状況表示機能
+            function displayInventoryStatus(siteId) {
+                if (!siteId || !inventory[siteId]) return '';
+                
+                const site = inventory[siteId];
+                return `
+                    <div style="margin-top: 15px; padding: 10px; background: rgba(255,255,255,0.1); border-radius: 8px;">
+                        <h4 style="color: #ffffff; margin-bottom: 10px;">📦 ${siteId} 在庫状況</h4>
+                        <div style="color: rgba(255,255,255,0.9); font-size: 13px;">
+                            • Non-Amazon PC: ${site['Non-Amazon PC'].available}/${site['Non-Amazon PC'].total}台<br>
+                            • Amazon PC: ${site['Amazon PC'].available}/${site['Amazon PC'].total}台<br>
+                            • モニター: ${site['Monitor'].available}/${site['Monitor'].total}台
+                        </div>
+                    </div>
+                `;
+            }
+            
             function updateProgressBar() {
                 document.querySelectorAll('.progress-step').forEach(function(step) {
                     const stepNum = parseInt(step.getAttribute('data-step'));
@@ -661,6 +816,29 @@
                     if (totalLaptops === 0 && monitorCount === 0) {
                         showError('equipmentRequired');
                         return false;
+                    }
+                    
+                    // 在庫確認
+                    const selectedSite = pickupSiteSelect.value;
+                    if (selectedSite) {
+                        const availability = checkInventoryAvailability(selectedSite, nonAmazonCount, amazonCount, monitorCount);
+                        if (!availability.available) {
+                            // 代替案を提案
+                            const alternatives = suggestAlternatives(selectedSite, nonAmazonCount, amazonCount, monitorCount);
+                            let errorMsg = availability.reason;
+                            
+                            if (alternatives.length > 0) {
+                                errorMsg += '\n\n代替案:';
+                                alternatives.forEach(alt => {
+                                    errorMsg += `\n• ${alt.message}`;
+                                });
+                            } else {
+                                errorMsg += '\n\n申し訳ございませんが、現在どのサイトでも在庫が不足しています。';
+                            }
+                            
+                            alert(errorMsg);
+                            return false;
+                        }
                     }
                 }
                 
@@ -796,9 +974,49 @@
                     rentalDays: daysDiff
                 };
 
+                // 在庫を減算
+                const selectedSite = formData.pickupSite;
+                if (inventory[selectedSite]) {
+                    inventory[selectedSite]['Non-Amazon PC'].available -= formData.nonAmazonPC;
+                    inventory[selectedSite]['Amazon PC'].available -= formData.amazonPC;
+                    inventory[selectedSite]['Monitor'].available -= formData.monitors;
+                    
+                    // LocalStorageに保存
+                    saveInventoryData(inventory);
+                }
+                
                 console.log('予約データ:', formData);
+                console.log('更新後在庫:', inventory[selectedSite]);
 
-                alert(translations[currentLanguage].successMessage);
+                // 予約完了メッセージに予約IDを追加
+                const reservationId = 'RES-' + Date.now().toString().slice(-8);
+                formData.reservationId = reservationId;
+                formData.status = 'active'; // 予約ステータス
+                formData.createdAt = new Date().toISOString();
+                
+                // 予約データを保存
+                try {
+                    console.log('About to save reservation:', formData);
+                    saveReservation(formData);
+                    console.log('Reservation saved successfully');
+                    
+                    // デバッグ: 保存後の確認
+                    const savedReservations = getReservations();
+                    console.log('予約保存後のデータ:', savedReservations);
+                    console.log('予約数:', savedReservations.length);
+                } catch (error) {
+                    console.error('Error saving reservation:', error);
+                    alert('予約の保存中にエラーが発生しました: ' + error.message);
+                }
+                
+                const successMsg = translations[currentLanguage].successMessage + 
+                    `\n\n予約ID: ${reservationId}\n` +
+                    `予約内容:\n` +
+                    `• サイト: ${formData.pickupSite}\n` +
+                    `• 期間: ${formData.startDate} ～ ${formData.endDate}\n` +
+                    `• 機器: Non-Amazon PC ${formData.nonAmazonPC}台, Amazon PC ${formData.amazonPC}台, モニター ${formData.monitors}台`;
+                
+                alert(successMsg);
             });
 
             const today = new Date().toISOString().split('T');
