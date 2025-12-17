@@ -1104,7 +1104,7 @@ Amazon IT`;
             }
             
             // ナビゲーション関数を定義
-            function nextStep() {
+            window.nextStep = function() {
                 try {
                     console.log('nextStep called, current step:', currentStep);
                     console.log('aliasInput value:', aliasInput ? aliasInput.value : 'aliasInput not found');
@@ -1124,7 +1124,7 @@ Amazon IT`;
                 }
             }
             
-            function prevStep() {
+            window.prevStep = function() {
                 try {
                     console.log('prevStep called, current step:', currentStep);
                     if (currentStep > 1) {
