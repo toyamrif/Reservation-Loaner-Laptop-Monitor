@@ -21,7 +21,7 @@
         }
         
         .container {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
             background: rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(20px);
@@ -44,6 +44,7 @@
             gap: 15px;
             margin-bottom: 30px;
             justify-content: center;
+            flex-wrap: wrap;
         }
         
         .nav-btn {
@@ -55,6 +56,8 @@
             cursor: pointer;
             font-weight: 500;
             transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
         }
         
         .nav-btn:hover, .nav-btn.active {
@@ -129,6 +132,67 @@
             background: rgba(46, 204, 113, 1);
         }
         
+        .equipment-card {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-left: 4px solid;
+        }
+        
+        .equipment-card.available {
+            border-left-color: #2ecc71;
+        }
+        
+        .equipment-card.in_use {
+            border-left-color: #e74c3c;
+        }
+        
+        .equipment-card.maintenance {
+            border-left-color: #f39c12;
+        }
+        
+        .equipment-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .equipment-code {
+            font-size: 18px;
+            font-weight: 600;
+            color: #ffffff;
+        }
+        
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .status-badge.available {
+            background: rgba(46, 204, 113, 0.3);
+            color: #2ecc71;
+        }
+        
+        .status-badge.in_use {
+            background: rgba(231, 76, 60, 0.3);
+            color: #e74c3c;
+        }
+        
+        .status-badge.maintenance {
+            background: rgba(243, 156, 18, 0.3);
+            color: #f39c12;
+        }
+        
+        .equipment-details {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        
         .back-link {
             display: inline-block;
             margin-top: 20px;
@@ -150,14 +214,29 @@
         <h1>🛠️ 在庫管理システム - 管理画面</h1>
         
         <div class="nav-buttons">
-            <button class="nav-btn active" onclick="showSection('inventory')">在庫管理</button>
+            <button class="nav-btn active" onclick="showSection('inventory')">在庫サマリー</button>
+            <button class="nav-btn" onclick="showSection('equipment')">個別機器管理</button>
             <button class="nav-btn" onclick="showSection('reservations')">予約状況</button>
-            <a href="return.html" class="nav-btn" style="text-decoration: none; display: inline-block;">🔄 返却管理</a>
+            <a href="return.html" class="nav-btn">🔄 返却管理</a>
         </div>
         
-        <!-- 在庫管理セクション -->
+        <!-- 在庫サマリーセクション -->
         <div id="inventory" class="section active">
             <div id="inventoryDisplay"></div>
+        </div>
+        
+        <!-- 個別機器管理セクション -->
+        <div id="equipment" class="section">
+            <div style="color: white; margin-bottom: 20px;">
+                <h3 style="text-align: center; margin-bottom: 20px;">🔧 個別機器管理</h3>
+                <div style="display: flex; gap: 10px; margin-bottom: 20px; justify-content: center; flex-wrap: wrap;">
+                    <button class="nav-btn active" onclick="filterEquipment('all')">全て</button>
+                    <button class="nav-btn" onclick="filterEquipment('available')">利用可能</button>
+                    <button class="nav-btn" onclick="filterEquipment('in_use')">使用中</button>
+                    <button class="nav-btn" onclick="filterEquipment('maintenance')">メンテナンス中</button>
+                </div>
+                <div id="equipmentList"></div>
+            </div>
         </div>
         
         <!-- 予約状況セクション -->
@@ -184,27 +263,22 @@
                 return JSON.parse(stored);
             }
             
-            // 初期データ
+            // 初期データ（HND10, HND17, HND21のみ）
             const defaultInventory = {
                 'HND10': {
-                    'Non-Amazon PC': { total: 15, available: 12 },
-                    'Amazon PC': { total: 10, available: 8 },
-                    'Monitor': { total: 8, available: 6 }
-                },
-                'HND11': {
-                    'Non-Amazon PC': { total: 12, available: 10 },
-                    'Amazon PC': { total: 8, available: 6 },
-                    'Monitor': { total: 6, available: 4 }
+                    'Non-Amazon PC': { total: 3, available: 3 },
+                    'Amazon PC': { total: 5, available: 5 },
+                    'Monitor': { total: 8, available: 8 }
                 },
                 'HND17': {
-                    'Non-Amazon PC': { total: 12, available: 10 },
-                    'Amazon PC': { total: 8, available: 7 },
-                    'Monitor': { total: 6, available: 5 }
+                    'Non-Amazon PC': { total: 2, available: 2 },
+                    'Amazon PC': { total: 4, available: 4 },
+                    'Monitor': { total: 6, available: 6 }
                 },
                 'HND21': {
-                    'Non-Amazon PC': { total: 10, available: 9 },
-                    'Amazon PC': { total: 6, available: 4 },
-                    'Monitor': { total: 5, available: 3 }
+                    'Non-Amazon PC': { total: 4, available: 4 },
+                    'Amazon PC': { total: 6, available: 6 },
+                    'Monitor': { total: 10, available: 10 }
                 }
             };
             
@@ -216,7 +290,138 @@
             localStorage.setItem('inventoryData', JSON.stringify(inventoryData));
         }
         
+        // 個別機器データ（LocalStorageから読み込み）
+        function getEquipmentData() {
+            const stored = localStorage.getItem('equipmentData');
+            if (stored) {
+                return JSON.parse(stored);
+            }
+            
+            // 初期データ - 個別機器
+            const defaultEquipment = [];
+            
+            // HND10の機器
+            for (let i = 1; i <= 5; i++) {
+                defaultEquipment.push({
+                    code: `AL${i}`,
+                    type: 'Amazon PC',
+                    site: 'HND10',
+                    status: 'available',
+                    currentUser: null,
+                    model: 'ThinkPad X1 Carbon',
+                    serialNumber: `SN-AL-${i.toString().padStart(3, '0')}`
+                });
+            }
+            
+            for (let i = 1; i <= 3; i++) {
+                defaultEquipment.push({
+                    code: `NAL${i}`,
+                    type: 'Non-Amazon PC',
+                    site: 'HND10',
+                    status: 'available',
+                    currentUser: null,
+                    model: 'Dell Latitude',
+                    serialNumber: `SN-NAL-${i.toString().padStart(3, '0')}`
+                });
+            }
+            
+            for (let i = 1; i <= 8; i++) {
+                defaultEquipment.push({
+                    code: `Monitor${i}`,
+                    type: 'Monitor',
+                    site: 'HND10',
+                    status: 'available',
+                    currentUser: null,
+                    model: 'Dell 24" Monitor',
+                    serialNumber: `SN-MON-${i.toString().padStart(3, '0')}`
+                });
+            }
+            
+            // HND17の機器
+            for (let i = 6; i <= 9; i++) {
+                defaultEquipment.push({
+                    code: `AL${i}`,
+                    type: 'Amazon PC',
+                    site: 'HND17',
+                    status: 'available',
+                    currentUser: null,
+                    model: 'ThinkPad X1 Carbon',
+                    serialNumber: `SN-AL-${i.toString().padStart(3, '0')}`
+                });
+            }
+            
+            for (let i = 4; i <= 5; i++) {
+                defaultEquipment.push({
+                    code: `NAL${i}`,
+                    type: 'Non-Amazon PC',
+                    site: 'HND17',
+                    status: 'available',
+                    currentUser: null,
+                    model: 'Dell Latitude',
+                    serialNumber: `SN-NAL-${i.toString().padStart(3, '0')}`
+                });
+            }
+            
+            for (let i = 9; i <= 14; i++) {
+                defaultEquipment.push({
+                    code: `Monitor${i}`,
+                    type: 'Monitor',
+                    site: 'HND17',
+                    status: 'available',
+                    currentUser: null,
+                    model: 'Dell 24" Monitor',
+                    serialNumber: `SN-MON-${i.toString().padStart(3, '0')}`
+                });
+            }
+            
+            // HND21の機器
+            for (let i = 10; i <= 15; i++) {
+                defaultEquipment.push({
+                    code: `AL${i}`,
+                    type: 'Amazon PC',
+                    site: 'HND21',
+                    status: 'available',
+                    currentUser: null,
+                    model: 'ThinkPad X1 Carbon',
+                    serialNumber: `SN-AL-${i.toString().padStart(3, '0')}`
+                });
+            }
+            
+            for (let i = 6; i <= 9; i++) {
+                defaultEquipment.push({
+                    code: `NAL${i}`,
+                    type: 'Non-Amazon PC',
+                    site: 'HND21',
+                    status: 'available',
+                    currentUser: null,
+                    model: 'Dell Latitude',
+                    serialNumber: `SN-NAL-${i.toString().padStart(3, '0')}`
+                });
+            }
+            
+            for (let i = 15; i <= 24; i++) {
+                defaultEquipment.push({
+                    code: `Monitor${i}`,
+                    type: 'Monitor',
+                    site: 'HND21',
+                    status: 'available',
+                    currentUser: null,
+                    model: 'Dell 24" Monitor',
+                    serialNumber: `SN-MON-${i.toString().padStart(3, '0')}`
+                });
+            }
+            
+            saveEquipmentData(defaultEquipment);
+            return defaultEquipment;
+        }
+        
+        function saveEquipmentData(equipmentData) {
+            localStorage.setItem('equipmentData', JSON.stringify(equipmentData));
+        }
+        
         let inventory = getInventoryData();
+        let equipmentList = getEquipmentData();
+        let currentFilter = 'all';
         
         function showSection(sectionName) {
             // 全セクションを非表示
@@ -224,20 +429,22 @@
                 section.classList.remove('active');
             });
             
-            // 全ボタンを非アクティブ
-            document.querySelectorAll('.nav-btn').forEach(btn => {
+            // ナビゲーションボタンを非アクティブ
+            document.querySelectorAll('.nav-buttons > .nav-btn').forEach(btn => {
                 btn.classList.remove('active');
             });
             
             // 選択されたセクションを表示
             document.getElementById(sectionName).classList.add('active');
-            if (event && event.target) {
-                event.target.classList.add('active');
-            }
             
-            // 予約状況セクションの場合はサマリーを更新
+            // クリックされたボタンをアクティブに
+            event.target.classList.add('active');
+            
+            // セクションごとの処理
             if (sectionName === 'reservations') {
                 updateReservationSummary();
+            } else if (sectionName === 'equipment') {
+                renderEquipmentList();
             }
         }
         
@@ -317,15 +524,101 @@
             container.innerHTML = html;
         }
         
+        function filterEquipment(status) {
+            currentFilter = status;
+            
+            // フィルターボタンのアクティブ状態を更新
+            document.querySelectorAll('#equipment .nav-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            renderEquipmentList();
+        }
+        
+        function renderEquipmentList() {
+            const container = document.getElementById('equipmentList');
+            let filteredEquipment = equipmentList;
+            
+            if (currentFilter !== 'all') {
+                filteredEquipment = equipmentList.filter(eq => eq.status === currentFilter);
+            }
+            
+            // サイトごとにグループ化
+            const groupedBySite = {};
+            filteredEquipment.forEach(eq => {
+                if (!groupedBySite[eq.site]) {
+                    groupedBySite[eq.site] = [];
+                }
+                groupedBySite[eq.site].push(eq);
+            });
+            
+            let html = '';
+            
+            for (let site in groupedBySite) {
+                html += `<div class="site-card">
+                    <div class="site-title">📍 ${site}</div>`;
+                
+                groupedBySite[site].forEach(equipment => {
+                    const statusText = {
+                        'available': '利用可能',
+                        'in_use': '使用中',
+                        'maintenance': 'メンテナンス中'
+                    }[equipment.status];
+                    
+                    html += `
+                        <div class="equipment-card ${equipment.status}">
+                            <div class="equipment-header">
+                                <span class="equipment-code">${equipment.code}</span>
+                                <span class="status-badge ${equipment.status}">${statusText}</span>
+                            </div>
+                            <div class="equipment-details">
+                                <div>機器タイプ: ${equipment.type}</div>
+                                <div>モデル: ${equipment.model}</div>
+                                <div>シリアル番号: ${equipment.serialNumber}</div>
+                                ${equipment.currentUser ? `<div>使用者: ${equipment.currentUser}</div>` : ''}
+                            </div>
+                            <div style="margin-top: 10px; display: flex; gap: 10px;">
+                                ${equipment.status === 'available' ? 
+                                    `<button class="update-btn" onclick="setEquipmentStatus('${equipment.code}', 'maintenance')">メンテナンスに設定</button>` : ''}
+                                ${equipment.status === 'maintenance' ? 
+                                    `<button class="update-btn" onclick="setEquipmentStatus('${equipment.code}', 'available')">利用可能に戻す</button>` : ''}
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                html += '</div>';
+            }
+            
+            if (filteredEquipment.length === 0) {
+                html = '<div style="text-align: center; color: rgba(255,255,255,0.6); padding: 40px;">該当する機器がありません</div>';
+            }
+            
+            container.innerHTML = html;
+        }
+        
+        function setEquipmentStatus(code, newStatus) {
+            const equipment = equipmentList.find(eq => eq.code === code);
+            if (equipment) {
+                equipment.status = newStatus;
+                if (newStatus === 'available') {
+                    equipment.currentUser = null;
+                }
+                saveEquipmentData(equipmentList);
+                renderEquipmentList();
+            }
+        }
+        
         function updateInventory(siteId, equipmentType, field, value) {
             const numValue = parseInt(value);
             if (numValue >= 0 && numValue <= inventory[siteId][equipmentType].total) {
                 inventory[siteId][equipmentType][field] = numValue;
-                saveInventoryData(inventory); // LocalStorageに保存
+                saveInventoryData(inventory);
                 console.log(`${siteId} ${equipmentType} ${field} を ${numValue} に更新`);
             } else {
                 alert('無効な値です。0以上、総数以下の値を入力してください。');
-                renderInventory(); // 元の値に戻す
+                renderInventory();
             }
         }
         
@@ -341,7 +634,7 @@
                     if (inventory[siteId][equipmentType].available > numTotal) {
                         inventory[siteId][equipmentType].available = numTotal;
                     }
-                    saveInventoryData(inventory); // LocalStorageに保存
+                    saveInventoryData(inventory);
                     renderInventory();
                 }
             }
