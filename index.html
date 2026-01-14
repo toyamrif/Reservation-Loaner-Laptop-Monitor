@@ -595,7 +595,130 @@
             // 個別機器データ管理
             function getEquipmentData() {
                 const stored = localStorage.getItem('equipmentData');
-                return stored ? JSON.parse(stored) : [];
+                if (stored) {
+                    return JSON.parse(stored);
+                }
+                
+                // 初期データがない場合は作成
+                return initializeEquipmentData();
+            }
+            
+            function initializeEquipmentData() {
+                const defaultEquipment = [];
+                
+                // HND10の機器
+                for (let i = 1; i <= 5; i++) {
+                    defaultEquipment.push({
+                        code: `AL${i}`,
+                        type: 'Amazon PC',
+                        site: 'HND10',
+                        status: 'available',
+                        currentUser: null,
+                        model: 'ThinkPad X1 Carbon',
+                        serialNumber: `SN-AL-${i.toString().padStart(3, '0')}`
+                    });
+                }
+                
+                for (let i = 1; i <= 3; i++) {
+                    defaultEquipment.push({
+                        code: `NAL${i}`,
+                        type: 'Non-Amazon PC',
+                        site: 'HND10',
+                        status: 'available',
+                        currentUser: null,
+                        model: 'Dell Latitude',
+                        serialNumber: `SN-NAL-${i.toString().padStart(3, '0')}`
+                    });
+                }
+                
+                for (let i = 1; i <= 8; i++) {
+                    defaultEquipment.push({
+                        code: `Monitor${i}`,
+                        type: 'Monitor',
+                        site: 'HND10',
+                        status: 'available',
+                        currentUser: null,
+                        model: 'Dell 24" Monitor',
+                        serialNumber: `SN-MON-${i.toString().padStart(3, '0')}`
+                    });
+                }
+                
+                // HND17の機器
+                for (let i = 6; i <= 9; i++) {
+                    defaultEquipment.push({
+                        code: `AL${i}`,
+                        type: 'Amazon PC',
+                        site: 'HND17',
+                        status: 'available',
+                        currentUser: null,
+                        model: 'ThinkPad X1 Carbon',
+                        serialNumber: `SN-AL-${i.toString().padStart(3, '0')}`
+                    });
+                }
+                
+                for (let i = 4; i <= 5; i++) {
+                    defaultEquipment.push({
+                        code: `NAL${i}`,
+                        type: 'Non-Amazon PC',
+                        site: 'HND17',
+                        status: 'available',
+                        currentUser: null,
+                        model: 'Dell Latitude',
+                        serialNumber: `SN-NAL-${i.toString().padStart(3, '0')}`
+                    });
+                }
+                
+                for (let i = 9; i <= 14; i++) {
+                    defaultEquipment.push({
+                        code: `Monitor${i}`,
+                        type: 'Monitor',
+                        site: 'HND17',
+                        status: 'available',
+                        currentUser: null,
+                        model: 'Dell 24" Monitor',
+                        serialNumber: `SN-MON-${i.toString().padStart(3, '0')}`
+                    });
+                }
+                
+                // HND21の機器
+                for (let i = 10; i <= 15; i++) {
+                    defaultEquipment.push({
+                        code: `AL${i}`,
+                        type: 'Amazon PC',
+                        site: 'HND21',
+                        status: 'available',
+                        currentUser: null,
+                        model: 'ThinkPad X1 Carbon',
+                        serialNumber: `SN-AL-${i.toString().padStart(3, '0')}`
+                    });
+                }
+                
+                for (let i = 6; i <= 9; i++) {
+                    defaultEquipment.push({
+                        code: `NAL${i}`,
+                        type: 'Non-Amazon PC',
+                        site: 'HND21',
+                        status: 'available',
+                        currentUser: null,
+                        model: 'Dell Latitude',
+                        serialNumber: `SN-NAL-${i.toString().padStart(3, '0')}`
+                    });
+                }
+                
+                for (let i = 15; i <= 24; i++) {
+                    defaultEquipment.push({
+                        code: `Monitor${i}`,
+                        type: 'Monitor',
+                        site: 'HND21',
+                        status: 'available',
+                        currentUser: null,
+                        model: 'Dell 24" Monitor',
+                        serialNumber: `SN-MON-${i.toString().padStart(3, '0')}`
+                    });
+                }
+                
+                saveEquipmentData(defaultEquipment);
+                return defaultEquipment;
             }
             
             function saveEquipmentData(equipmentData) {
