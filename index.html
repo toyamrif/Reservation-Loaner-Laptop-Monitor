@@ -606,8 +606,8 @@
             function initializeEquipmentData() {
                 const defaultEquipment = [];
                 
-                // HND10の機器
-                for (let i = 1; i <= 5; i++) {
+                // HND10の機器（AL: 20台、NAL: 20台）
+                for (let i = 1; i <= 20; i++) {
                     defaultEquipment.push({
                         code: `AL${i}`,
                         type: 'Amazon PC',
@@ -615,11 +615,11 @@
                         status: 'available',
                         currentUser: null,
                         model: 'ThinkPad X1 Carbon',
-                        serialNumber: `SN-AL-${i.toString().padStart(3, '0')}`
+                        serialNumber: `SN-AL-HND10-${i.toString().padStart(3, '0')}`
                     });
                 }
                 
-                for (let i = 1; i <= 3; i++) {
+                for (let i = 1; i <= 20; i++) {
                     defaultEquipment.push({
                         code: `NAL${i}`,
                         type: 'Non-Amazon PC',
@@ -627,7 +627,7 @@
                         status: 'available',
                         currentUser: null,
                         model: 'Dell Latitude',
-                        serialNumber: `SN-NAL-${i.toString().padStart(3, '0')}`
+                        serialNumber: `SN-NAL-HND10-${i.toString().padStart(3, '0')}`
                     });
                 }
                 
@@ -639,12 +639,12 @@
                         status: 'available',
                         currentUser: null,
                         model: 'Dell 24" Monitor',
-                        serialNumber: `SN-MON-${i.toString().padStart(3, '0')}`
+                        serialNumber: `SN-MON-HND10-${i.toString().padStart(3, '0')}`
                     });
                 }
                 
-                // HND17の機器
-                for (let i = 6; i <= 9; i++) {
+                // HND17の機器（AL: 20台、NAL: 20台）
+                for (let i = 21; i <= 40; i++) {
                     defaultEquipment.push({
                         code: `AL${i}`,
                         type: 'Amazon PC',
@@ -652,11 +652,11 @@
                         status: 'available',
                         currentUser: null,
                         model: 'ThinkPad X1 Carbon',
-                        serialNumber: `SN-AL-${i.toString().padStart(3, '0')}`
+                        serialNumber: `SN-AL-HND17-${i.toString().padStart(3, '0')}`
                     });
                 }
                 
-                for (let i = 4; i <= 5; i++) {
+                for (let i = 21; i <= 40; i++) {
                     defaultEquipment.push({
                         code: `NAL${i}`,
                         type: 'Non-Amazon PC',
@@ -664,7 +664,7 @@
                         status: 'available',
                         currentUser: null,
                         model: 'Dell Latitude',
-                        serialNumber: `SN-NAL-${i.toString().padStart(3, '0')}`
+                        serialNumber: `SN-NAL-HND17-${i.toString().padStart(3, '0')}`
                     });
                 }
                 
@@ -676,12 +676,12 @@
                         status: 'available',
                         currentUser: null,
                         model: 'Dell 24" Monitor',
-                        serialNumber: `SN-MON-${i.toString().padStart(3, '0')}`
+                        serialNumber: `SN-MON-HND17-${i.toString().padStart(3, '0')}`
                     });
                 }
                 
-                // HND21の機器
-                for (let i = 10; i <= 15; i++) {
+                // HND21の機器（AL: 20台、NAL: 20台）
+                for (let i = 41; i <= 60; i++) {
                     defaultEquipment.push({
                         code: `AL${i}`,
                         type: 'Amazon PC',
@@ -689,11 +689,11 @@
                         status: 'available',
                         currentUser: null,
                         model: 'ThinkPad X1 Carbon',
-                        serialNumber: `SN-AL-${i.toString().padStart(3, '0')}`
+                        serialNumber: `SN-AL-HND21-${i.toString().padStart(3, '0')}`
                     });
                 }
                 
-                for (let i = 6; i <= 9; i++) {
+                for (let i = 41; i <= 60; i++) {
                     defaultEquipment.push({
                         code: `NAL${i}`,
                         type: 'Non-Amazon PC',
@@ -701,7 +701,7 @@
                         status: 'available',
                         currentUser: null,
                         model: 'Dell Latitude',
-                        serialNumber: `SN-NAL-${i.toString().padStart(3, '0')}`
+                        serialNumber: `SN-NAL-HND21-${i.toString().padStart(3, '0')}`
                     });
                 }
                 
@@ -713,7 +713,7 @@
                         status: 'available',
                         currentUser: null,
                         model: 'Dell 24" Monitor',
-                        serialNumber: `SN-MON-${i.toString().padStart(3, '0')}`
+                        serialNumber: `SN-MON-HND21-${i.toString().padStart(3, '0')}`
                     });
                 }
                 
