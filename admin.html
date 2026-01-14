@@ -284,18 +284,18 @@
             // 初期データ（HND10, HND17, HND21のみ）
             const defaultInventory = {
                 'HND10': {
-                    'Non-Amazon PC': { total: 3, available: 3 },
-                    'Amazon PC': { total: 5, available: 5 },
-                    'Monitor': { total: 8, available: 8 }
+                    'Non-Amazon PC': { total: 20, available: 20 },
+                    'Amazon PC': { total: 20, available: 20 },
+                    'Monitor': { total: 10, available: 10 }
                 },
                 'HND17': {
-                    'Non-Amazon PC': { total: 2, available: 2 },
-                    'Amazon PC': { total: 4, available: 4 },
-                    'Monitor': { total: 6, available: 6 }
+                    'Non-Amazon PC': { total: 20, available: 20 },
+                    'Amazon PC': { total: 20, available: 20 },
+                    'Monitor': { total: 10, available: 10 }
                 },
                 'HND21': {
-                    'Non-Amazon PC': { total: 4, available: 4 },
-                    'Amazon PC': { total: 6, available: 6 },
+                    'Non-Amazon PC': { total: 20, available: 20 },
+                    'Amazon PC': { total: 20, available: 20 },
                     'Monitor': { total: 10, available: 10 }
                 }
             };
@@ -318,7 +318,7 @@
             // 初期データ - 個別機器
             const defaultEquipment = [];
             
-            // HND10の機器（AL: 20台、NAL: 20台）
+            // HND10の機器（AL: 20台、NAL: 20台、Monitor: 10台）
             for (let i = 1; i <= 20; i++) {
                 defaultEquipment.push({
                     code: `AL${i}`,
@@ -343,7 +343,7 @@
                 });
             }
             
-            for (let i = 1; i <= 8; i++) {
+            for (let i = 1; i <= 10; i++) {
                 defaultEquipment.push({
                     code: `Monitor${i}`,
                     type: 'Monitor',
@@ -355,8 +355,8 @@
                 });
             }
             
-            // HND17の機器（AL: 20台、NAL: 20台）
-            for (let i = 21; i <= 40; i++) {
+            // HND17の機器（AL: 20台、NAL: 20台、Monitor: 10台）
+            for (let i = 1; i <= 20; i++) {
                 defaultEquipment.push({
                     code: `AL${i}`,
                     type: 'Amazon PC',
@@ -368,7 +368,7 @@
                 });
             }
             
-            for (let i = 21; i <= 40; i++) {
+            for (let i = 1; i <= 20; i++) {
                 defaultEquipment.push({
                     code: `NAL${i}`,
                     type: 'Non-Amazon PC',
@@ -380,7 +380,7 @@
                 });
             }
             
-            for (let i = 9; i <= 14; i++) {
+            for (let i = 1; i <= 10; i++) {
                 defaultEquipment.push({
                     code: `Monitor${i}`,
                     type: 'Monitor',
@@ -392,8 +392,8 @@
                 });
             }
             
-            // HND21の機器（AL: 20台、NAL: 20台）
-            for (let i = 41; i <= 60; i++) {
+            // HND21の機器（AL: 20台、NAL: 20台、Monitor: 10台）
+            for (let i = 1; i <= 20; i++) {
                 defaultEquipment.push({
                     code: `AL${i}`,
                     type: 'Amazon PC',
@@ -405,7 +405,7 @@
                 });
             }
             
-            for (let i = 41; i <= 60; i++) {
+            for (let i = 1; i <= 20; i++) {
                 defaultEquipment.push({
                     code: `NAL${i}`,
                     type: 'Non-Amazon PC',
@@ -417,7 +417,7 @@
                 });
             }
             
-            for (let i = 15; i <= 24; i++) {
+            for (let i = 1; i <= 10; i++) {
                 defaultEquipment.push({
                     code: `Monitor${i}`,
                     type: 'Monitor',
