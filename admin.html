@@ -193,6 +193,24 @@
             line-height: 1.6;
         }
         
+        .user-tag {
+            display: inline-block;
+            padding: 6px 14px;
+            background: linear-gradient(135deg, rgba(52, 152, 219, 0.4), rgba(41, 128, 185, 0.4));
+            border: 1px solid rgba(52, 152, 219, 0.6);
+            border-radius: 20px;
+            color: #3498db;
+            font-weight: 600;
+            font-size: 13px;
+            margin-top: 8px;
+            box-shadow: 0 2px 8px rgba(52, 152, 219, 0.2);
+        }
+        
+        .user-tag::before {
+            content: "👤 ";
+            margin-right: 4px;
+        }
+        
         .back-link {
             display: inline-block;
             margin-top: 20px;
@@ -306,8 +324,8 @@
                     code: `AL${i}`,
                     type: 'Amazon PC',
                     site: 'HND10',
-                    status: 'available',
-                    currentUser: null,
+                    status: i <= 2 ? 'in_use' : 'available', // AL1, AL2を使用中に
+                    currentUser: i <= 2 ? `user0${i}` : null,
                     model: 'ThinkPad X1 Carbon',
                     serialNumber: `SN-AL-${i.toString().padStart(3, '0')}`
                 });
@@ -318,8 +336,8 @@
                     code: `NAL${i}`,
                     type: 'Non-Amazon PC',
                     site: 'HND10',
-                    status: 'available',
-                    currentUser: null,
+                    status: i === 1 ? 'in_use' : 'available', // NAL1を使用中に
+                    currentUser: i === 1 ? 'tanaka' : null,
                     model: 'Dell Latitude',
                     serialNumber: `SN-NAL-${i.toString().padStart(3, '0')}`
                 });
@@ -576,13 +594,15 @@
                                 <div>機器タイプ: ${equipment.type}</div>
                                 <div>モデル: ${equipment.model}</div>
                                 <div>シリアル番号: ${equipment.serialNumber}</div>
-                                ${equipment.currentUser ? `<div>使用者: ${equipment.currentUser}</div>` : ''}
                             </div>
+                            ${equipment.currentUser ? `<div class="user-tag">${equipment.currentUser}</div>` : ''}
                             <div style="margin-top: 10px; display: flex; gap: 10px;">
                                 ${equipment.status === 'available' ? 
                                     `<button class="update-btn" onclick="setEquipmentStatus('${equipment.code}', 'maintenance')">メンテナンスに設定</button>` : ''}
                                 ${equipment.status === 'maintenance' ? 
                                     `<button class="update-btn" onclick="setEquipmentStatus('${equipment.code}', 'available')">利用可能に戻す</button>` : ''}
+                                ${equipment.status === 'in_use' ? 
+                                    `<button class="update-btn" style="background: rgba(231, 76, 60, 0.8);" onclick="returnEquipment('${equipment.code}')">返却処理</button>` : ''}
                             </div>
                         </div>
                     `;
@@ -636,6 +656,19 @@
                     }
                     saveInventoryData(inventory);
                     renderInventory();
+                }
+            }
+        }
+        
+        function returnEquipment(code) {
+            const equipment = equipmentList.find(eq => eq.code === code);
+            if (equipment && equipment.status === 'in_use') {
+                if (confirm(`${equipment.code} を返却処理しますか？\n使用者: ${equipment.currentUser}`)) {
+                    equipment.status = 'available';
+                    equipment.currentUser = null;
+                    saveEquipmentData(equipmentList);
+                    renderEquipmentList();
+                    alert('返却処理が完了しました。');
                 }
             }
         }
