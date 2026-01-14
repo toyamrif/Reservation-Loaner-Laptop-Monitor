@@ -1246,7 +1246,7 @@ Amazon IT`;
                         return false;
                     }
                     
-                    if (daysDiff < 1) {
+                    if (daysDiff < 0) {
                         showError('invalidDateRange', endDateGroup);
                         return false;
                     }
@@ -1259,6 +1259,7 @@ Amazon IT`;
                 const startDate = new Date(startDateInput.value);
                 const endDate = new Date(endDateInput.value);
                 const daysDiff = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
+                const rentalDays = daysDiff === 0 ? 1 : daysDiff; // 同じ日の場合は1日間として扱う
                 
                 let html = '<div style="color: #ffffff;">';
                 html += '<p style="margin-bottom: 15px;"><strong>' + translations[currentLanguage].confirmationAlias + ':</strong> ' + aliasInput.value + '</p>';
@@ -1271,7 +1272,7 @@ Amazon IT`;
                 html += '</ul>';
                 html += '<p style="margin-bottom: 15px;"><strong>' + translations[currentLanguage].confirmationStartDate + ':</strong> ' + startDateInput.value + '</p>';
                 html += '<p style="margin-bottom: 15px;"><strong>' + translations[currentLanguage].confirmationEndDate + ':</strong> ' + endDateInput.value + '</p>';
-                html += '<p><strong>' + translations[currentLanguage].confirmationDuration + ':</strong> ' + daysDiff + ' ' + translations[currentLanguage].confirmationDays + '</p>';
+                html += '<p><strong>' + translations[currentLanguage].confirmationDuration + ':</strong> ' + rentalDays + ' ' + translations[currentLanguage].confirmationDays + '</p>';
                 html += '</div>';
                 
                 document.getElementById('confirmationContent').innerHTML = html;
@@ -1366,6 +1367,7 @@ Amazon IT`;
                 const startDate = new Date(startDateInput.value);
                 const endDate = new Date(endDateInput.value);
                 const daysDiff = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
+                const rentalDays = daysDiff === 0 ? 1 : daysDiff; // 同じ日の場合は1日間として扱う
 
                 const formData = {
                     alias: aliasInput.value,
@@ -1375,7 +1377,7 @@ Amazon IT`;
                     monitors: monitorCount,
                     startDate: startDateInput.value,
                     endDate: endDateInput.value,
-                    rentalDays: daysDiff
+                    rentalDays: rentalDays
                 };
 
                 // 在庫を減算
