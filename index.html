@@ -592,6 +592,61 @@
                 }
             }
             
+            // 個別機器データ管理
+            function getEquipmentData() {
+                const stored = localStorage.getItem('equipmentData');
+                return stored ? JSON.parse(stored) : [];
+            }
+            
+            function saveEquipmentData(equipmentData) {
+                localStorage.setItem('equipmentData', JSON.stringify(equipmentData));
+            }
+            
+            // 個別機器を予約に割り当て
+            function assignEquipmentToReservation(site, nonAmazonCount, amazonCount, monitorCount, userAlias) {
+                const equipmentList = getEquipmentData();
+                const assigned = [];
+                
+                // Non-Amazon PCを割り当て
+                const availableNonAmazon = equipmentList.filter(eq => 
+                    eq.site === site && 
+                    eq.type === 'Non-Amazon PC' && 
+                    eq.status === 'available'
+                );
+                for (let i = 0; i < nonAmazonCount && i < availableNonAmazon.length; i++) {
+                    availableNonAmazon[i].status = 'in_use';
+                    availableNonAmazon[i].currentUser = userAlias;
+                    assigned.push(availableNonAmazon[i].code);
+                }
+                
+                // Amazon PCを割り当て
+                const availableAmazon = equipmentList.filter(eq => 
+                    eq.site === site && 
+                    eq.type === 'Amazon PC' && 
+                    eq.status === 'available'
+                );
+                for (let i = 0; i < amazonCount && i < availableAmazon.length; i++) {
+                    availableAmazon[i].status = 'in_use';
+                    availableAmazon[i].currentUser = userAlias;
+                    assigned.push(availableAmazon[i].code);
+                }
+                
+                // Monitorを割り当て
+                const availableMonitors = equipmentList.filter(eq => 
+                    eq.site === site && 
+                    eq.type === 'Monitor' && 
+                    eq.status === 'available'
+                );
+                for (let i = 0; i < monitorCount && i < availableMonitors.length; i++) {
+                    availableMonitors[i].status = 'in_use';
+                    availableMonitors[i].currentUser = userAlias;
+                    assigned.push(availableMonitors[i].code);
+                }
+                
+                saveEquipmentData(equipmentList);
+                return assigned;
+            }
+            
             let inventory = getInventoryData();
             
             // メール通知機能
@@ -718,6 +773,7 @@ Loaner Laptop予約システムより、予約確認のご連絡です。
 
 ■ 予約機器
 ${reservationData.nonAmazonPC > 0 ? `・Non-Amazon PC: ${reservationData.nonAmazonPC}台\n` : ''}${reservationData.amazonPC > 0 ? `・Amazon PC: ${reservationData.amazonPC}台\n` : ''}${reservationData.monitors > 0 ? `・モニター: ${reservationData.monitors}台\n` : ''}
+${reservationData.assignedEquipment && reservationData.assignedEquipment.length > 0 ? `\n■ 割り当てられた機器\n${reservationData.assignedEquipment.map(code => `・${code}`).join('\n')}\n` : ''}
 
 ■ 受取場所詳細
 場所: ${reservationData.pickupSite} Pickup Station
@@ -1214,6 +1270,16 @@ Amazon IT`;
                     saveInventoryData(inventory);
                 }
 
+                // 個別機器を割り当て
+                const assignedEquipment = assignEquipmentToReservation(
+                    selectedSite,
+                    formData.nonAmazonPC,
+                    formData.amazonPC,
+                    formData.monitors,
+                    formData.alias
+                );
+                formData.assignedEquipment = assignedEquipment;
+
                 // 予約IDを生成
                 const reservationId = 'RES-' + Date.now().toString().slice(-8);
                 formData.reservationId = reservationId;
@@ -1278,6 +1344,7 @@ Amazon IT`;
 • サイト: ${formData.pickupSite}
 • 期間: ${formData.startDate} ～ ${formData.endDate}
 • 機器: Non-Amazon PC ${formData.nonAmazonPC}台, Amazon PC ${formData.amazonPC}台, モニター ${formData.monitors}台
+${assignedEquipment.length > 0 ? `\n割り当てられた機器:\n${assignedEquipment.map(code => `• ${code}`).join('\n')}` : ''}
 
 ✅ 確認メールを ${formData.alias}@amazon.co.jp に送信しました。`;
 
