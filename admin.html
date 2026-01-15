@@ -80,6 +80,13 @@
             border: 1px solid rgba(255, 255, 255, 0.2);
         }
         
+        .equipment-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
         .site-title {
             color: #ffffff;
             font-size: 20px;
@@ -134,10 +141,10 @@
         
         .equipment-card {
             background: rgba(255, 255, 255, 0.08);
-            border-radius: 10px;
-            padding: 15px;
-            margin-bottom: 10px;
-            border-left: 4px solid;
+            border-radius: 8px;
+            padding: 8px 10px;
+            margin-bottom: 6px;
+            border-left: 3px solid;
         }
         
         .equipment-card.available {
@@ -156,19 +163,19 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 10px;
+            margin-bottom: 6px;
         }
         
         .equipment-code {
-            font-size: 18px;
+            font-size: 14px;
             font-weight: 600;
             color: #ffffff;
         }
         
         .status-badge {
-            padding: 4px 12px;
-            border-radius: 12px;
-            font-size: 12px;
+            padding: 3px 10px;
+            border-radius: 10px;
+            font-size: 11px;
             font-weight: 500;
         }
         
@@ -189,20 +196,23 @@
         
         .equipment-details {
             color: rgba(255, 255, 255, 0.8);
-            font-size: 14px;
-            line-height: 1.6;
+            font-size: 12px;
+            line-height: 1.5;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4px 10px;
         }
         
         .user-tag {
             display: inline-block;
-            padding: 6px 14px;
+            padding: 4px 10px;
             background: linear-gradient(135deg, rgba(52, 152, 219, 0.4), rgba(41, 128, 185, 0.4));
             border: 1px solid rgba(52, 152, 219, 0.6);
-            border-radius: 20px;
+            border-radius: 15px;
             color: #3498db;
             font-weight: 600;
-            font-size: 13px;
-            margin-top: 8px;
+            font-size: 11px;
+            margin-top: 6px;
             box-shadow: 0 2px 8px rgba(52, 152, 219, 0.2);
         }
         
@@ -575,7 +585,8 @@
             
             for (let site in groupedBySite) {
                 html += `<div class="site-card">
-                    <div class="site-title">📍 ${site}</div>`;
+                    <div class="site-title">📍 ${site}</div>
+                    <div class="equipment-grid">`;
                 
                 groupedBySite[site].forEach(equipment => {
                     const statusText = {
@@ -591,24 +602,24 @@
                                 <span class="status-badge ${equipment.status}">${statusText}</span>
                             </div>
                             <div class="equipment-details">
-                                <div>機器タイプ: ${equipment.type}</div>
+                                <div>タイプ: ${equipment.type}</div>
                                 <div>モデル: ${equipment.model}</div>
-                                <div>シリアル番号: ${equipment.serialNumber}</div>
+                                <div style="grid-column: 1 / -1;">S/N: ${equipment.serialNumber}</div>
                             </div>
                             ${equipment.currentUser ? `<div class="user-tag">${equipment.currentUser}</div>` : ''}
-                            <div style="margin-top: 10px; display: flex; gap: 10px;">
+                            <div style="margin-top: 8px; display: flex; gap: 8px;">
                                 ${equipment.status === 'available' ? 
-                                    `<button class="update-btn" onclick="setEquipmentStatus('${equipment.code}', 'maintenance')">メンテナンスに設定</button>` : ''}
+                                    `<button class="update-btn" style="font-size: 11px; padding: 4px 12px;" onclick="setEquipmentStatus('${equipment.code}', 'maintenance')">メンテナンス</button>` : ''}
                                 ${equipment.status === 'maintenance' ? 
-                                    `<button class="update-btn" onclick="setEquipmentStatus('${equipment.code}', 'available')">利用可能に戻す</button>` : ''}
+                                    `<button class="update-btn" style="font-size: 11px; padding: 4px 12px;" onclick="setEquipmentStatus('${equipment.code}', 'available')">利用可能に戻す</button>` : ''}
                                 ${equipment.status === 'in_use' ? 
-                                    `<button class="update-btn" style="background: rgba(231, 76, 60, 0.8);" onclick="returnEquipment('${equipment.code}')">返却処理</button>` : ''}
+                                    `<button class="update-btn" style="background: rgba(231, 76, 60, 0.8); font-size: 11px; padding: 4px 12px;" onclick="returnEquipment('${equipment.code}')">返却処理</button>` : ''}
                             </div>
                         </div>
                     `;
                 });
                 
-                html += '</div>';
+                html += '</div></div>';
             }
             
             if (filteredEquipment.length === 0) {
