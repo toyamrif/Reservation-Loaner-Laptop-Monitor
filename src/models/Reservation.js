@@ -175,6 +175,69 @@ class Reservation extends BaseModel {
     const result = await query(queryText, params);
     return result.rows;
   }
+
+  // 予約キャンセル（在庫復旧含む）
+  async cancel(id) {
+    return await transaction(async (client) => {
+      // 予約情報取得
+      const reservationResult = await client.query(
+        `SELECT r.*, re.equipment_type, re.quantity
+         FROM reservations r
+         JOIN reservation_equipment re ON r.id = re.reservation_id
+         WHERE r.id = $1`,
+        [id]
+      );
+
+      if (reservationResult.rows.length === 0) {
+        throw new Error('Reservation not found');
+      }
+
+      const reservation = reservationResult.rows[0];
+
+      // 予約ステータスを「キャンセル」に更新
+      await client.query(
+        `UPDATE reservations 
+         SET status = 'cancelled', updated_at = NOW()
+         WHERE id = $1`,
+        [id]
+      );
+
+      // 在庫を復旧
+      for (const row of reservationResult.rows) {
+        await client.query(
+          `UPDATE inventory 
+           SET available_quantity = available_quantity + $3,
+               updated_at = NOW()
+           WHERE site = $1 AND equipment_type = $2`,
+          [reservation.pickup_site, row.equipment_type, row.quantity]
+        );
+      }
+
+      // 機器割り当てがある場合は解除
+      await client.query(
+        `UPDATE equipment_items 
+         SET status = 'available', 
+             current_user_alias = NULL,
+             updated_at = NOW()
+         WHERE id IN (
+           SELECT equipment_id 
+           FROM equipment_usage_history 
+           WHERE reservation_id = $1 AND end_date IS NULL
+         )`,
+        [id]
+      );
+
+      // 使用履歴を終了
+      await client.query(
+        `UPDATE equipment_usage_history 
+         SET end_date = NOW()
+         WHERE reservation_id = $1 AND end_date IS NULL`,
+        [id]
+      );
+
+      return { id, status: 'cancelled' };
+    });
+  }
 }
 
 module.exports = new Reservation();
