@@ -184,12 +184,12 @@ class Reservation extends BaseModel {
         `SELECT r.*, re.equipment_type, re.quantity
          FROM reservations r
          JOIN reservation_equipment re ON r.id = re.reservation_id
-         WHERE r.id = $1`,
+         WHERE r.id = $1 AND r.status != 'cancelled'`,
         [id]
       );
 
       if (reservationResult.rows.length === 0) {
-        throw new Error('Reservation not found');
+        throw new Error('Reservation not found or already cancelled');
       }
 
       const reservation = reservationResult.rows[0];
@@ -202,16 +202,9 @@ class Reservation extends BaseModel {
         [id]
       );
 
-      // 在庫を復旧
-      for (const row of reservationResult.rows) {
-        await client.query(
-          `UPDATE inventory 
-           SET available_quantity = available_quantity + $3,
-               updated_at = NOW()
-           WHERE site = $1 AND equipment_type = $2`,
-          [reservation.pickup_site, row.equipment_type, row.quantity]
-        );
-      }
+      // 在庫復旧は行わない
+      // 理由: getAvailableQuantity()が予約状況を動的に計算するため、
+      // キャンセルされた予約は自動的に在庫計算から除外される
 
       // 機器割り当てがある場合は解除
       await client.query(
