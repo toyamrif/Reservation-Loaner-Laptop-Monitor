@@ -609,11 +609,12 @@
                             </div>
                             <div class="equipment-details">
                                 <div>タイプ: ${equipment.type}</div>
-                                <div>モデル: ${equipment.model}</div>
-                                <div style="grid-column: 1 / -1;">S/N: ${equipment.serialNumber}</div>
+                                <div>モデル: <span id="model-${equipment.code}">${equipment.model}</span></div>
+                                <div style="grid-column: 1 / -1;">S/N: <span id="sn-${equipment.code}">${equipment.serialNumber}</span></div>
                             </div>
                             ${equipment.currentUser ? `<div class="user-tag">${equipment.currentUser}</div>` : ''}
-                            <div style="margin-top: 8px; display: flex; gap: 8px;">
+                            <div style="margin-top: 8px; display: flex; gap: 8px; flex-wrap: wrap;">
+                                <button class="update-btn" style="font-size: 11px; padding: 4px 12px; background: rgba(52, 152, 219, 0.8);" onclick="editEquipmentInfo('${equipment.code}')">📝 編集</button>
                                 ${equipment.status === 'available' ? 
                                     `<button class="update-btn" style="font-size: 11px; padding: 4px 12px;" onclick="setEquipmentStatus('${equipment.code}', 'maintenance')">メンテナンス</button>` : ''}
                                 ${equipment.status === 'maintenance' ? 
@@ -688,6 +689,25 @@
                     alert('返却処理が完了しました。');
                 }
             }
+        }
+        
+        function editEquipmentInfo(code) {
+            const equipment = equipmentList.find(eq => eq.code === code);
+            if (!equipment) return;
+            
+            const newModel = prompt(`モデル名を入力してください:\n(現在: ${equipment.model})`, equipment.model);
+            if (newModel === null) return; // キャンセル
+            
+            const newSerialNumber = prompt(`シリアル番号を入力してください:\n(現在: ${equipment.serialNumber})`, equipment.serialNumber);
+            if (newSerialNumber === null) return; // キャンセル
+            
+            // 更新
+            equipment.model = newModel.trim() || equipment.model;
+            equipment.serialNumber = newSerialNumber.trim() || equipment.serialNumber;
+            
+            saveEquipmentData(equipmentList);
+            renderEquipmentList();
+            alert('機器情報を更新しました。');
         }
         
         // 初期表示
