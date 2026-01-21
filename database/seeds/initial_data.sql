@@ -4,18 +4,18 @@
 -- 1. 初期在庫データ
 INSERT INTO inventory (site, equipment_type, total_quantity, available_quantity, maintenance_quantity) VALUES
 -- HND10サイト
-('HND10', 'amazon_pc', 5, 5, 0),
-('HND10', 'non_amazon_pc', 3, 3, 0),
-('HND10', 'monitor', 8, 8, 0),
+('HND10', 'amazon_pc', 20, 20, 0),
+('HND10', 'non_amazon_pc', 20, 20, 0),
+('HND10', 'monitor', 10, 10, 0),
 
 -- HND17サイト
-('HND17', 'amazon_pc', 4, 4, 0),
-('HND17', 'non_amazon_pc', 2, 2, 0),
-('HND17', 'monitor', 6, 6, 0),
+('HND17', 'amazon_pc', 20, 20, 0),
+('HND17', 'non_amazon_pc', 20, 20, 0),
+('HND17', 'monitor', 10, 10, 0),
 
 -- HND21サイト
-('HND21', 'amazon_pc', 6, 6, 0),
-('HND21', 'non_amazon_pc', 4, 4, 0),
+('HND21', 'amazon_pc', 20, 20, 0),
+('HND21', 'non_amazon_pc', 20, 20, 0),
 ('HND21', 'monitor', 10, 10, 0);
 
 -- 2. 個別機器データ
