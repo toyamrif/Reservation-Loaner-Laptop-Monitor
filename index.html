@@ -972,61 +972,58 @@
             function generateEmailContent(reservationData) {
                 const currentDate = new Date().toLocaleDateString('ja-JP');
                 
-                return `件名: 【Loaner Laptop予約システム】予約確認 - ${reservationData.reservationId}
-
-${reservationData.alias} 様
-
-いつもお疲れ様です。
-Loaner Laptop予約システムより、予約確認のご連絡です。
-
-■ 予約詳細
-予約ID: ${reservationData.reservationId}
-利用者: ${reservationData.alias}
-受取サイト: ${reservationData.pickupSite}
-利用期間: ${reservationData.startDate} ～ ${reservationData.endDate} (${reservationData.rentalDays}日間)
-
-■ 予約機器
-${reservationData.nonAmazonPC > 0 ? `・Non-Amazon PC: ${reservationData.nonAmazonPC}台\n` : ''}${reservationData.amazonPC > 0 ? `・Amazon PC: ${reservationData.amazonPC}台\n` : ''}${reservationData.monitors > 0 ? `・モニター: ${reservationData.monitors}台\n` : ''}
-${reservationData.assignedEquipment && reservationData.assignedEquipment.length > 0 ? `\n■ 割り当てられた機器\n${reservationData.assignedEquipment.map(code => `・${code}`).join('\n')}\n` : ''}
-
-■ 受取場所詳細
-場所: ${reservationData.pickupSite} Pickup Station
-場所が不明な場合は受け取り前に以下をご確認下さい。
-https://w.amazon.com/bin/view/JP-Local-IT/IT_Support_About_Hardware_On_HND10_HND11_HND17/Pick_up_station
-
-■ 受取手順
-Pickup Stationの木棚に予約IDとAliasが記載されたPCをお取りください。
-IT窓口が閉まっている時間帯でも受け取りが可能です。
-身分証明等は不要です。
-
-■ 重要事項
-・機器の準備が完了次第、改めてご連絡いたします
-・利用期間は最大3ヶ月までとなります
-・返却時は必ず返却処理を行ってください
-・機器に問題がある場合は、すぐに受取場所の担当者にご連絡ください
-
-■ Amazon Loaner初回ログインについて
-Amazon Loanerは初回ログイン時は、ログイン前にVPNを接続いただいた上でログインする必要があります。
-方法についてはこちらに記載しております：
-https://it.amazon.com/articles/access/cisco-anyconnect/connect-to-corp-network-before-laptop-login
-
-オフィスにいらっしゃる間にログインを済ませていただくことを推奨しております。
-もし不明点ありましたらITカウンター（Open: 10am - 12pm / 2pm - 5pm）までお聞きください。
-
-■ 返却について
-利用完了後の返却時、Amazon Loaner laptopは返却用ロッカーをお使いください。
-モニターについては、ピックアップされた時と同じ場所で構いません。
-
-ロッカーの場所や使い方について：
-https://w.amazon.com/bin/view/JP-Local-IT/IT_Support_About_Hardware_On_HND10_HND11_HND17/Return_PC/
-
-■ お問い合わせ
-ご不明な点がございましたら、ITチームまでお気軽にお声がけください。
-
-予約日時: ${currentDate}
-
----
-Amazon IT`;
+                let emailText = '件名: 【Loaner Laptop予約システム】予約確認 - ' + reservationData.reservationId + '\n\n';
+                emailText += reservationData.alias + ' 様\n\n';
+                emailText += 'いつもお疲れ様です。\n';
+                emailText += 'Loaner Laptop予約システムより、予約確認のご連絡です。\n\n';
+                emailText += '■ 予約詳細\n';
+                emailText += '予約ID: ' + reservationData.reservationId + '\n';
+                emailText += '利用者: ' + reservationData.alias + '\n';
+                emailText += '受取サイト: ' + reservationData.pickupSite + '\n';
+                emailText += '利用期間: ' + reservationData.startDate + ' ～ ' + reservationData.endDate + ' (' + reservationData.rentalDays + '日間)\n\n';
+                emailText += '■ 予約機器\n';
+                if (reservationData.nonAmazonPC > 0) emailText += '・Non-Amazon PC: ' + reservationData.nonAmazonPC + '台\n';
+                if (reservationData.amazonPC > 0) emailText += '・Amazon PC: ' + reservationData.amazonPC + '台\n';
+                if (reservationData.monitors > 0) emailText += '・モニター: ' + reservationData.monitors + '台\n';
+                
+                if (reservationData.assignedEquipment && reservationData.assignedEquipment.length > 0) {
+                    emailText += '\n■ 割り当てられた機器\n';
+                    reservationData.assignedEquipment.forEach(code => {
+                        emailText += '・' + code + '\n';
+                    });
+                }
+                
+                emailText += '\n■ 受取場所詳細\n';
+                emailText += '場所: ' + reservationData.pickupSite + ' Pickup Station\n';
+                emailText += '場所が不明な場合は受け取り前に以下をご確認下さい。\n';
+                emailText += 'https://w.amazon.com/bin/view/JP-Local-IT/IT_Support_About_Hardware_On_HND10_HND11_HND17/Pick_up_station\n\n';
+                emailText += '■ 受取手順\n';
+                emailText += 'Pickup Stationの木棚に予約IDとAliasが記載されたPCをお取りください。\n';
+                emailText += 'IT窓口が閉まっている時間帯でも受け取りが可能です。\n';
+                emailText += '身分証明等は不要です。\n\n';
+                emailText += '■ 重要事項\n';
+                emailText += '・機器の準備が完了次第、改めてご連絡いたします\n';
+                emailText += '・利用期間は最大3ヶ月までとなります\n';
+                emailText += '・返却時は必ず返却処理を行ってください\n';
+                emailText += '・機器に問題がある場合は、すぐに受取場所の担当者にご連絡ください\n\n';
+                emailText += '■ Amazon Loaner初回ログインについて\n';
+                emailText += 'Amazon Loanerは初回ログイン時は、ログイン前にVPNを接続いただいた上でログインする必要があります。\n';
+                emailText += '方法についてはこちらに記載しております：\n';
+                emailText += 'https://it.amazon.com/articles/access/cisco-anyconnect/connect-to-corp-network-before-laptop-login\n\n';
+                emailText += 'オフィスにいらっしゃる間にログインを済ませていただくことを推奨しております。\n';
+                emailText += 'もし不明点ありましたらITカウンター（Open: 10am - 12pm / 2pm - 5pm）までお聞きください。\n\n';
+                emailText += '■ 返却について\n';
+                emailText += '利用完了後の返却時、Amazon Loaner laptopは返却用ロッカーをお使いください。\n';
+                emailText += 'モニターについては、ピックアップされた時と同じ場所で構いません。\n\n';
+                emailText += 'ロッカーの場所や使い方について：\n';
+                emailText += 'https://w.amazon.com/bin/view/JP-Local-IT/IT_Support_About_Hardware_On_HND10_HND11_HND17/Return_PC/\n\n';
+                emailText += '■ お問い合わせ\n';
+                emailText += 'ご不明な点がございましたら、ITチームまでお気軽にお声がけください。\n\n';
+                emailText += '予約日時: ' + currentDate + '\n\n';
+                emailText += '---\n';
+                emailText += 'Amazon IT';
+                
+                return emailText;
             }
             
             // グローバル関数として定義
@@ -1106,22 +1103,24 @@ Amazon IT`;
             const pickupSiteGroup = document.getElementById('pickupSiteGroup');
             
             // サイト選択時の在庫表示
-            pickupSiteSelect.addEventListener('change', function() {
-                const existingInventoryDisplay = document.getElementById('inventoryDisplay');
-                if (existingInventoryDisplay) {
-                    existingInventoryDisplay.remove();
-                }
-                
-                if (this.value) {
-                    const inventoryHTML = displayInventoryStatus(this.value);
-                    if (inventoryHTML) {
-                        const inventoryDiv = document.createElement('div');
-                        inventoryDiv.id = 'inventoryDisplay';
-                        inventoryDiv.innerHTML = inventoryHTML;
-                        pickupSiteGroup.appendChild(inventoryDiv);
+            if (pickupSiteSelect) {
+                pickupSiteSelect.addEventListener('change', function() {
+                    const existingInventoryDisplay = document.getElementById('inventoryDisplay');
+                    if (existingInventoryDisplay) {
+                        existingInventoryDisplay.remove();
                     }
-                }
-            });
+                    
+                    if (this.value) {
+                        const inventoryHTML = displayInventoryStatus(this.value);
+                        if (inventoryHTML) {
+                            const inventoryDiv = document.createElement('div');
+                            inventoryDiv.id = 'inventoryDisplay';
+                            inventoryDiv.innerHTML = inventoryHTML;
+                            pickupSiteGroup.appendChild(inventoryDiv);
+                        }
+                    }
+                });
+            }
             
             const startDateInput = document.getElementById('startDate');
             const startDateGroup = document.getElementById('startDateGroup');
