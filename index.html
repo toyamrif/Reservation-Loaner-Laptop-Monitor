@@ -1177,13 +1177,13 @@ Amazon IT`;
             
             // 在庫確認機能
             function checkInventoryAvailability(siteId, nonAmazonCount, amazonCount, monitorCount) {
-                if (!inventory[siteId]) return { available: false, reason: 'サイトが見つかりません' };
+                if (!inventory || !inventory[siteId]) return { available: true }; // 在庫データがない場合はスキップ
                 
                 const site = inventory[siteId];
                 const checks = [
-                    { type: 'Non-Amazon PC', requested: nonAmazonCount, available: site['Non-Amazon PC'].available },
-                    { type: 'Amazon PC', requested: amazonCount, available: site['Amazon PC'].available },
-                    { type: 'Monitor', requested: monitorCount, available: site['Monitor'].available }
+                    { type: 'Non-Amazon PC', requested: nonAmazonCount, available: site['Non-Amazon PC']?.available || 0 },
+                    { type: 'Amazon PC', requested: amazonCount, available: site['Amazon PC']?.available || 0 },
+                    { type: 'Monitor', requested: monitorCount, available: site['Monitor']?.available || 0 }
                 ];
                 
                 for (let check of checks) {
@@ -1203,6 +1203,8 @@ Amazon IT`;
             function suggestAlternatives(originalSite, nonAmazonCount, amazonCount, monitorCount) {
                 const alternatives = [];
                 
+                if (!inventory || Object.keys(inventory).length === 0) return alternatives;
+                
                 for (let siteId in inventory) {
                     if (siteId === originalSite) continue;
                     
@@ -1220,9 +1222,11 @@ Amazon IT`;
             
             // 在庫状況表示機能
             function displayInventoryStatus(siteId) {
-                if (!siteId || !inventory[siteId]) return '';
+                if (!siteId || !inventory || !inventory[siteId]) return '';
                 
                 const site = inventory[siteId];
+                if (!site['Non-Amazon PC'] || !site['Amazon PC'] || !site['Monitor']) return '';
+                
                 return `
                     <div style="margin-top: 15px; padding: 10px; background: rgba(255,255,255,0.1); border-radius: 8px;">
                         <h4 style="color: #ffffff; margin-bottom: 10px;">📦 ${siteId} 在庫状況</h4>
@@ -1298,9 +1302,9 @@ Amazon IT`;
                         return false;
                     }
                     
-                    // 在庫確認
+                    // 在庫確認（inventoryが読み込まれている場合のみ）
                     const selectedSite = pickupSiteSelect.value;
-                    if (selectedSite) {
+                    if (selectedSite && inventory && Object.keys(inventory).length > 0) {
                         const availability = checkInventoryAvailability(selectedSite, nonAmazonCount, amazonCount, monitorCount);
                         if (!availability.available) {
                             // 代替案を提案
