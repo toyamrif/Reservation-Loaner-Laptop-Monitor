@@ -1379,24 +1379,12 @@
 
                     // 予約データを保存
                     await saveReservation(formData);
-                );
-                formData.assignedEquipment = assignedEquipment;
-
-                // 予約IDを生成
-                const reservationId = 'RES-' + Date.now().toString().slice(-8);
-                formData.reservationId = reservationId;
-                formData.status = 'active';
-                formData.createdAt = new Date().toISOString();
-
-                // 予約データを保存
-                try {
-                    saveReservation(formData);
 
                     // メール送信処理
                     const emailContent = generateEmailContent(formData);
                     const emailData = {
-                        to: `${formData.alias}@amazon.co.jp`,
-                        subject: `【Loaner Laptop予約システム】予約確認 - ${reservationId}`,
+                        to: formData.alias + '@amazon.co.jp',
+                        subject: '【Loaner Laptop予約システム】予約確認 - ' + reservationId,
                         message: emailContent,
                         reservationData: formData
                     };
@@ -1404,18 +1392,7 @@
                     // ローディング表示
                     const loadingDiv = document.createElement('div');
                     loadingDiv.id = 'loadingMessage';
-                    loadingDiv.style.cssText = `
-                        position: fixed;
-                        top: 50%;
-                        left: 50%;
-                        transform: translate(-50%, -50%);
-                        background: rgba(0, 0, 0, 0.8);
-                        color: white;
-                        padding: 20px 40px;
-                        border-radius: 10px;
-                        z-index: 10001;
-                        font-size: 16px;
-                    `;
+                    loadingDiv.style.cssText = 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0, 0, 0, 0.8); color: white; padding: 20px 40px; border-radius: 10px; z-index: 10001; font-size: 16px;';
                     loadingDiv.textContent = 'メールを送信中...';
                     document.body.appendChild(loadingDiv);
 
@@ -1438,17 +1415,19 @@
                         const result = await response.json();
                         console.log('Email sent successfully:', result);
 
-                        const successMsg = `予約が完了しました！
-
-予約ID: ${reservationId}
-
-予約内容:
-• サイト: ${formData.pickupSite}
-• 期間: ${formData.startDate} ～ ${formData.endDate}
-• 機器: Non-Amazon PC ${formData.nonAmazonPC}台, Amazon PC ${formData.amazonPC}台, モニター ${formData.monitors}台
-${assignedEquipment.length > 0 ? `\n割り当てられた機器:\n${assignedEquipment.map(code => `• ${code}`).join('\n')}` : ''}
-
-✅ 確認メールを ${formData.alias}@amazon.co.jp に送信しました。`;
+                        let successMsg = '予約が完了しました！\n\n';
+                        successMsg += '予約ID: ' + reservationId + '\n\n';
+                        successMsg += '予約内容:\n';
+                        successMsg += '• サイト: ' + formData.pickupSite + '\n';
+                        successMsg += '• 期間: ' + formData.startDate + ' ～ ' + formData.endDate + '\n';
+                        successMsg += '• 機器: Non-Amazon PC ' + formData.nonAmazonPC + '台, Amazon PC ' + formData.amazonPC + '台, モニター ' + formData.monitors + '台\n';
+                        if (assignedEquipment.length > 0) {
+                            successMsg += '\n割り当てられた機器:\n';
+                            assignedEquipment.forEach(code => {
+                                successMsg += '• ' + code + '\n';
+                            });
+                        }
+                        successMsg += '\n✅ 確認メールを ' + formData.alias + '@amazon.co.jp に送信しました。';
 
                         alert(successMsg);
 
@@ -1457,11 +1436,7 @@ ${assignedEquipment.length > 0 ? `\n割り当てられた機器:\n${assignedEqui
                     } else {
                         const error = await response.json();
                         console.error('Email sending failed:', error);
-                        alert(`予約は完了しましたが、メール送信に失敗しました。
-
-予約ID: ${reservationId}
-
-手動で確認メールを送信してください。`);
+                        alert('予約は完了しましたが、メール送信に失敗しました。\n\n予約ID: ' + reservationId + '\n\n手動で確認メールを送信してください。');
                     }
                 } catch (error) {
                     console.error('Error:', error);
