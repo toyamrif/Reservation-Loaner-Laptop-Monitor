@@ -181,38 +181,87 @@
     </div>
     
     <script>
-        // LocalStorageから在庫データと予約データを取得
-        function getInventoryData() {
-            const stored = localStorage.getItem('inventoryData');
-            return stored ? JSON.parse(stored) : {};
-        }
+        // API Base URL
+        const API_BASE_URL = 'https://qqu1ilmtn9.execute-api.ap-northeast-1.amazonaws.com/prod';
         
-        function saveInventoryData(inventoryData) {
-            localStorage.setItem('inventoryData', JSON.stringify(inventoryData));
-        }
-        
-        function getReservations() {
-            const stored = localStorage.getItem('reservations');
-            console.log('return.html - getReservations raw data:', stored);
-            const result = stored ? JSON.parse(stored) : [];
-            console.log('return.html - getReservations parsed:', result);
-            return result;
-        }
-        
-        function updateReservationStatus(reservationId, status) {
-            const reservations = getReservations();
-            const reservation = reservations.find(r => r.reservationId === reservationId);
-            if (reservation) {
-                reservation.status = status;
-                reservation.returnedAt = new Date().toISOString();
-                localStorage.setItem('reservations', JSON.stringify(reservations));
-                return reservation;
+        // APIから在庫データと予約データを取得
+        async function getInventoryData() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/inventory`);
+                if (!response.ok) {
+                    throw new Error('在庫データの取得に失敗しました');
+                }
+                const inventoryList = await response.json();
+                
+                // APIレスポンスをグループ化して既存の形式に変換
+                const inventory = {};
+                inventoryList.forEach(item => {
+                    if (!inventory[item.site]) {
+                        inventory[item.site] = {};
+                    }
+                    
+                    // equipment_typeを表示名に変換
+                    const displayName = item.equipment_type === 'non_amazon_pc' ? 'Non-Amazon PC' :
+                                       item.equipment_type === 'amazon_pc' ? 'Amazon PC' :
+                                       item.equipment_type === 'monitor' ? 'Monitor' : item.equipment_type;
+                    
+                    inventory[item.site][displayName] = {
+                        total: item.total_quantity,
+                        available: item.available_quantity
+                    };
+                });
+                
+                return inventory;
+            } catch (error) {
+                console.error('在庫データ取得エラー:', error);
+                return {};
             }
-            return null;
         }
         
-        function returnEquipment(reservationId) {
-            const reservations = getReservations();
+        async function saveInventoryData(inventoryData) {
+            // 在庫データはAPIで管理されるため、この関数は不要
+            console.log('saveInventoryData called (no-op in API mode)');
+        }
+        
+        async function getReservations() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/reservations`);
+                if (!response.ok) {
+                    throw new Error('予約データの取得に失敗しました');
+                }
+                return await response.json();
+            } catch (error) {
+                console.error('予約データ取得エラー:', error);
+                return [];
+            }
+        }
+        
+        async function updateReservationStatus(reservationId, status) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/reservations/${reservationId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ 
+                        status,
+                        returnedAt: new Date().toISOString()
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error('予約ステータスの更新に失敗しました');
+                }
+                
+                return await response.json();
+            } catch (error) {
+                console.error('予約ステータス更新エラー:', error);
+                throw error;
+            }
+        }
+        
+        async function returnEquipment(reservationId) {
+            const reservations = await getReservations();
             const reservation = reservations.find(r => r.reservationId === reservationId);
             
             if (!reservation || reservation.status === 'returned') {
@@ -232,27 +281,53 @@
                 return;
             }
             
-            // 在庫を復旧
-            const inventory = getInventoryData();
-            if (inventory[reservation.pickupSite]) {
-                inventory[reservation.pickupSite]['Non-Amazon PC'].available += reservation.nonAmazonPC;
-                inventory[reservation.pickupSite]['Amazon PC'].available += reservation.amazonPC;
-                inventory[reservation.pickupSite]['Monitor'].available += reservation.monitors;
+            try {
+                // 予約ステータスを更新
+                await updateReservationStatus(reservationId, 'returned');
                 
-                saveInventoryData(inventory);
+                // 機器のステータスを更新（available に戻す）
+                if (reservation.assignedEquipment && reservation.assignedEquipment.length > 0) {
+                    for (const equipmentCode of reservation.assignedEquipment) {
+                        await updateEquipmentStatus(equipmentCode, 'available', null);
+                    }
+                }
+                
+                // 返却完了メール通知を表示
+                showReturnEmailNotification(reservation);
+                
+                // 表示を更新
+                showAllReservations();
+            } catch (error) {
+                console.error('返却処理エラー:', error);
+                alert('返却処理に失敗しました: ' + error.message);
             }
-            
-            // 予約ステータスを更新
-            updateReservationStatus(reservationId, 'returned');
-            
-            // 返却完了メール通知を表示
-            showReturnEmailNotification(reservation);
-            
-            // 表示を更新
-            showAllReservations();
         }
         
-        function renderReservations(reservations) {
+        async function updateEquipmentStatus(code, status, userAlias = null) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/equipment/${code}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        status: status,
+                        current_user_alias: userAlias
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error('機器ステータスの更新に失敗しました');
+                }
+                
+                return await response.json();
+            } catch (error) {
+                console.error('機器ステータス更新エラー:', error);
+                throw error;
+            }
+        }
+        
+        async function renderReservations(reservations) {
             const container = document.getElementById('reservationsContainer');
             
             if (reservations.length === 0) {
@@ -294,9 +369,9 @@
             container.innerHTML = html;
         }
         
-        function searchReservations() {
+        async function searchReservations() {
             const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-            const allReservations = getReservations();
+            const allReservations = await getReservations();
             
             if (!searchTerm) {
                 showAllReservations();
@@ -309,14 +384,14 @@
                 reservation.pickupSite.toLowerCase().includes(searchTerm)
             );
             
-            renderReservations(filteredReservations);
+            await renderReservations(filteredReservations);
         }
         
-        function showAllReservations() {
-            const allReservations = getReservations();
+        async function showAllReservations() {
+            const allReservations = await getReservations();
             // 新しい順にソート
             allReservations.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-            renderReservations(allReservations);
+            await renderReservations(allReservations);
         }
         
         // 初期表示
@@ -334,9 +409,9 @@
         });
         
         // デバッグ機能
-        function debugLocalStorage() {
-            const reservations = getReservations();
-            const inventory = getInventoryData();
+        async function debugLocalStorage() {
+            const reservations = await getReservations();
+            const inventory = await getInventoryData();
             
             alert(`LocalStorage Debug Info:
             
@@ -353,7 +428,7 @@
         }
         
         // テスト予約を手動で追加
-        function addTestReservation() {
+        async function addTestReservation() {
             const testReservation = {
                 reservationId: 'TEST-' + Date.now().toString().slice(-8),
                 alias: 'test-user',
@@ -368,12 +443,25 @@
                 createdAt: new Date().toISOString()
             };
             
-            const reservations = getReservations();
-            reservations.push(testReservation);
-            localStorage.setItem('reservations', JSON.stringify(reservations));
-            
-            alert('テスト予約を追加しました: ' + testReservation.reservationId);
-            showAllReservations();
+            try {
+                const response = await fetch(`${API_BASE_URL}/reservations`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(testReservation)
+                });
+                
+                if (!response.ok) {
+                    throw new Error('テスト予約の追加に失敗しました');
+                }
+                
+                alert('テスト予約を追加しました: ' + testReservation.reservationId);
+                showAllReservations();
+            } catch (error) {
+                console.error('テスト予約追加エラー:', error);
+                alert('テスト予約の追加に失敗しました: ' + error.message);
+            }
         }
         
         // 返却完了メール通知機能

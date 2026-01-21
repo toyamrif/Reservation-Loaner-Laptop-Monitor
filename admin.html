@@ -290,42 +290,78 @@
     </div>
     
     <script>
-        // 在庫データ（LocalStorageから読み込み）
-        function getInventoryData() {
-            const stored = localStorage.getItem('inventoryData');
-            if (stored) {
-                return JSON.parse(stored);
-            }
-            
-            // 初期データ（HND10, HND17, HND21のみ）
-            const defaultInventory = {
-                'HND10': {
-                    'Non-Amazon PC': { total: 20, available: 20 },
-                    'Amazon PC': { total: 20, available: 20 },
-                    'Monitor': { total: 10, available: 10 }
-                },
-                'HND17': {
-                    'Non-Amazon PC': { total: 20, available: 20 },
-                    'Amazon PC': { total: 20, available: 20 },
-                    'Monitor': { total: 10, available: 10 }
-                },
-                'HND21': {
-                    'Non-Amazon PC': { total: 20, available: 20 },
-                    'Amazon PC': { total: 20, available: 20 },
-                    'Monitor': { total: 10, available: 10 }
+        // API Base URL
+        const API_BASE_URL = 'https://qqu1ilmtn9.execute-api.ap-northeast-1.amazonaws.com/prod';
+        
+        // 在庫データ（APIから読み込み）
+        async function getInventoryData() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/inventory`);
+                if (!response.ok) {
+                    throw new Error('在庫データの取得に失敗しました');
                 }
-            };
-            
-            saveInventoryData(defaultInventory);
-            return defaultInventory;
+                const inventoryList = await response.json();
+                
+                // APIレスポンスをグループ化して既存の形式に変換
+                const inventory = {};
+                inventoryList.forEach(item => {
+                    if (!inventory[item.site]) {
+                        inventory[item.site] = {};
+                    }
+                    
+                    // equipment_typeを表示名に変換
+                    const displayName = item.equipment_type === 'non_amazon_pc' ? 'Non-Amazon PC' :
+                                       item.equipment_type === 'amazon_pc' ? 'Amazon PC' :
+                                       item.equipment_type === 'monitor' ? 'Monitor' : item.equipment_type;
+                    
+                    inventory[item.site][displayName] = {
+                        total: item.total_quantity,
+                        available: item.available_quantity
+                    };
+                });
+                
+                return inventory;
+            } catch (error) {
+                console.error('在庫データ取得エラー:', error);
+                alert('在庫データの取得に失敗しました: ' + error.message);
+                return {};
+            }
         }
         
-        function saveInventoryData(inventoryData) {
-            localStorage.setItem('inventoryData', JSON.stringify(inventoryData));
+        async function saveInventoryData(inventoryData) {
+            // 在庫データはAPIで管理されるため、この関数は不要
+            console.log('saveInventoryData called (no-op in API mode)');
         }
         
-        // 個別機器データ（LocalStorageから読み込み）
-        function getEquipmentData() {
+        // 個別機器データ（APIから読み込み）
+        async function getEquipmentData() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/equipment`);
+                if (!response.ok) {
+                    throw new Error('機器データの取得に失敗しました');
+                }
+                const equipmentList = await response.json();
+                
+                // APIレスポンスを既存の形式に変換
+                return equipmentList.map(item => ({
+                    code: item.equipment_code,
+                    type: item.equipment_type === 'non_amazon_pc' ? 'Non-Amazon PC' :
+                          item.equipment_type === 'amazon_pc' ? 'Amazon PC' :
+                          item.equipment_type === 'monitor' ? 'Monitor' : item.equipment_type,
+                    site: item.site,
+                    status: item.status,
+                    currentUser: item.current_user_alias,
+                    model: item.model_name || 'N/A',
+                    serialNumber: item.serial_number || 'N/A'
+                }));
+            } catch (error) {
+                console.error('機器データ取得エラー:', error);
+                alert('機器データの取得に失敗しました: ' + error.message);
+                return [];
+            }
+        }
+        
+        function getEquipmentDataOld() {
             const stored = localStorage.getItem('equipmentData');
             if (stored) {
                 return JSON.parse(stored);
@@ -449,13 +485,27 @@
             return defaultEquipment;
         }
         
-        function saveEquipmentData(equipmentData) {
-            localStorage.setItem('equipmentData', JSON.stringify(equipmentData));
+        async function saveEquipmentData(equipmentData) {
+            // 機器データはAPIで管理されるため、この関数は不要
+            console.log('saveEquipmentData called (no-op in API mode)');
         }
         
-        let inventory = getInventoryData();
-        let equipmentList = getEquipmentData();
+        let inventory = {};
+        let equipmentList = [];
         let currentFilter = 'all';
+        
+        // 初期データをロード
+        async function initializeData() {
+            inventory = await getInventoryData();
+            equipmentList = await getEquipmentData();
+            renderInventory();
+            if (document.getElementById('equipment').classList.contains('active')) {
+                renderEquipmentList();
+            }
+        }
+        
+        // ページロード時にデータを取得
+        initializeData();
         
         function showSection(sectionName) {
             // 全セクションを非表示
@@ -482,13 +532,21 @@
             }
         }
         
-        function getReservations() {
-            const stored = localStorage.getItem('reservations');
-            return stored ? JSON.parse(stored) : [];
+        async function getReservations() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/reservations`);
+                if (!response.ok) {
+                    throw new Error('予約データの取得に失敗しました');
+                }
+                return await response.json();
+            } catch (error) {
+                console.error('予約データ取得エラー:', error);
+                return [];
+            }
         }
         
-        function updateReservationSummary() {
-            const reservations = getReservations();
+        async function updateReservationSummary() {
+            const reservations = await getReservations();
             const activeReservations = reservations.filter(r => r.status === 'active');
             const returnedReservations = reservations.filter(r => r.status === 'returned');
             
@@ -636,15 +694,37 @@
             container.innerHTML = html;
         }
         
-        function setEquipmentStatus(code, newStatus) {
-            const equipment = equipmentList.find(eq => eq.code === code);
-            if (equipment) {
+        async function setEquipmentStatus(code, newStatus) {
+            try {
+                const equipment = equipmentList.find(eq => eq.code === code);
+                if (!equipment) return;
+                
+                const response = await fetch(`${API_BASE_URL}/equipment/${code}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        status: newStatus,
+                        current_user_alias: newStatus === 'available' ? null : equipment.currentUser
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error('ステータス更新に失敗しました');
+                }
+                
+                // ローカルデータを更新
                 equipment.status = newStatus;
                 if (newStatus === 'available') {
                     equipment.currentUser = null;
                 }
-                saveEquipmentData(equipmentList);
+                
                 renderEquipmentList();
+                alert('ステータスを更新しました');
+            } catch (error) {
+                console.error('ステータス更新エラー:', error);
+                alert('ステータスの更新に失敗しました: ' + error.message);
             }
         }
         
@@ -691,7 +771,7 @@
             }
         }
         
-        function editEquipmentInfo(code) {
+        async function editEquipmentInfo(code) {
             const equipment = equipmentList.find(eq => eq.code === code);
             if (!equipment) return;
             
@@ -701,17 +781,33 @@
             const newSerialNumber = prompt(`シリアル番号を入力してください:\n(現在: ${equipment.serialNumber})`, equipment.serialNumber);
             if (newSerialNumber === null) return; // キャンセル
             
-            // 更新
-            equipment.model = newModel.trim() || equipment.model;
-            equipment.serialNumber = newSerialNumber.trim() || equipment.serialNumber;
-            
-            saveEquipmentData(equipmentList);
-            renderEquipmentList();
-            alert('機器情報を更新しました。');
+            try {
+                const response = await fetch(`${API_BASE_URL}/equipment/${code}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        model_name: newModel.trim() || equipment.model,
+                        serial_number: newSerialNumber.trim() || equipment.serialNumber
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error('機器情報の更新に失敗しました');
+                }
+                
+                // ローカルデータを更新
+                equipment.model = newModel.trim() || equipment.model;
+                equipment.serialNumber = newSerialNumber.trim() || equipment.serialNumber;
+                
+                renderEquipmentList();
+                alert('機器情報を更新しました。');
+            } catch (error) {
+                console.error('機器情報更新エラー:', error);
+                alert('機器情報の更新に失敗しました: ' + error.message);
+            }
         }
-        
-        // 初期表示
-        renderInventory();
     </script>
 </body>
 </html>

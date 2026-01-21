@@ -516,6 +516,9 @@
         document.addEventListener('DOMContentLoaded', function() {
             'use strict';
             
+            // API Base URL
+            const API_BASE_URL = 'https://qqu1ilmtn9.execute-api.ap-northeast-1.amazonaws.com/prod';
+            
             let currentStep = 1;
             let nonAmazonCount = 0;
             let amazonCount = 0;
@@ -525,81 +528,138 @@
             const MAX_MONITORS = 10;
             const MAX_RENTAL_DAYS = 90;
             
-            // 在庫管理データ（LocalStorageから読み込み）
-            function getInventoryData() {
-                const stored = localStorage.getItem('inventoryData');
-                if (stored) {
-                    return JSON.parse(stored);
-                }
-                
-                // 初期データ
-                const defaultInventory = {
-                    'HND10': {
-                        'Non-Amazon PC': { total: 20, available: 20 },
-                        'Amazon PC': { total: 20, available: 20 },
-                        'Monitor': { total: 10, available: 10 }
-                    },
-                    'HND17': {
-                        'Non-Amazon PC': { total: 20, available: 20 },
-                        'Amazon PC': { total: 20, available: 20 },
-                        'Monitor': { total: 10, available: 10 }
-                    },
-                    'HND21': {
-                        'Non-Amazon PC': { total: 20, available: 20 },
-                        'Amazon PC': { total: 20, available: 20 },
-                        'Monitor': { total: 10, available: 10 }
+            // 在庫管理データ（APIから読み込み）
+            async function getInventoryData() {
+                try {
+                    const response = await fetch(`${API_BASE_URL}/inventory`);
+                    if (!response.ok) {
+                        throw new Error('在庫データの取得に失敗しました');
                     }
-                };
-                
-                saveInventoryData(defaultInventory);
-                return defaultInventory;
+                    const inventoryList = await response.json();
+                    
+                    // APIレスポンスをグループ化して既存の形式に変換
+                    const inventory = {};
+                    inventoryList.forEach(item => {
+                        if (!inventory[item.site]) {
+                            inventory[item.site] = {};
+                        }
+                        
+                        // equipment_typeを表示名に変換
+                        const displayName = item.equipment_type === 'non_amazon_pc' ? 'Non-Amazon PC' :
+                                           item.equipment_type === 'amazon_pc' ? 'Amazon PC' :
+                                           item.equipment_type === 'monitor' ? 'Monitor' : item.equipment_type;
+                        
+                        inventory[item.site][displayName] = {
+                            total: item.total_quantity,
+                            available: item.available_quantity
+                        };
+                    });
+                    
+                    return inventory;
+                } catch (error) {
+                    console.error('在庫データ取得エラー:', error);
+                    alert('在庫データの取得に失敗しました: ' + error.message);
+                    return {};
+                }
             }
             
             function saveInventoryData(inventoryData) {
-                localStorage.setItem('inventoryData', JSON.stringify(inventoryData));
+                // 在庫データはAPIで管理されるため、この関数は不要
+                console.log('saveInventoryData called (no-op in API mode)');
             }
             
             // 予約データ管理
-            function getReservations() {
-                const stored = localStorage.getItem('reservations');
-                console.log('getReservations - raw stored data:', stored);
-                const result = stored ? JSON.parse(stored) : [];
-                console.log('getReservations - parsed result:', result);
-                return result;
+            async function getReservations() {
+                try {
+                    const response = await fetch(`${API_BASE_URL}/reservations`);
+                    if (!response.ok) {
+                        throw new Error('予約データの取得に失敗しました');
+                    }
+                    return await response.json();
+                } catch (error) {
+                    console.error('予約データ取得エラー:', error);
+                    return [];
+                }
             }
             
-            function saveReservation(reservationData) {
-                console.log('saveReservation called with:', reservationData);
-                const reservations = getReservations();
-                console.log('Current reservations before save:', reservations);
-                reservations.push(reservationData);
-                console.log('Reservations after push:', reservations);
-                localStorage.setItem('reservations', JSON.stringify(reservations));
-                console.log('Saved to localStorage. Verification:', localStorage.getItem('reservations'));
+            async function saveReservation(reservationData) {
+                try {
+                    const response = await fetch(`${API_BASE_URL}/reservations`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(reservationData)
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error('予約の保存に失敗しました');
+                    }
+                    
+                    return await response.json();
+                } catch (error) {
+                    console.error('予約保存エラー:', error);
+                    throw error;
+                }
             }
             
-            function updateReservationStatus(reservationId, status) {
-                const reservations = getReservations();
-                const reservation = reservations.find(r => r.reservationId === reservationId);
-                if (reservation) {
-                    reservation.status = status;
-                    localStorage.setItem('reservations', JSON.stringify(reservations));
+            async function updateReservationStatus(reservationId, status) {
+                try {
+                    const response = await fetch(`${API_BASE_URL}/reservations/${reservationId}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ status })
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error('予約ステータスの更新に失敗しました');
+                    }
+                    
+                    return await response.json();
+                } catch (error) {
+                    console.error('予約ステータス更新エラー:', error);
+                    throw error;
                 }
             }
             
             // 個別機器データ管理
-            function getEquipmentData() {
-                const stored = localStorage.getItem('equipmentData');
-                if (stored) {
-                    return JSON.parse(stored);
+            async function getEquipmentData() {
+                try {
+                    const response = await fetch(`${API_BASE_URL}/equipment`);
+                    if (!response.ok) {
+                        throw new Error('機器データの取得に失敗しました');
+                    }
+                    const equipmentList = await response.json();
+                    
+                    // APIレスポンスを既存の形式に変換
+                    return equipmentList.map(item => ({
+                        code: item.equipment_code,
+                        type: item.equipment_type === 'non_amazon_pc' ? 'Non-Amazon PC' :
+                              item.equipment_type === 'amazon_pc' ? 'Amazon PC' :
+                              item.equipment_type === 'monitor' ? 'Monitor' : item.equipment_type,
+                        site: item.site,
+                        status: item.status,
+                        currentUser: item.current_user_alias,
+                        model: item.model_name || 'N/A',
+                        serialNumber: item.serial_number || 'N/A'
+                    }));
+                } catch (error) {
+                    console.error('機器データ取得エラー:', error);
+                    return [];
                 }
-                
-                // 初期データがない場合は作成
-                return initializeEquipmentData();
             }
             
             function initializeEquipmentData() {
-                const defaultEquipment = [];
+                // APIモードでは不要
+                return [];
+            }
+            
+            function saveEquipmentData(equipmentData) {
+                // 機器データはAPIで管理されるため、この関数は不要
+                console.log('saveEquipmentData called (no-op in API mode)');
+            }
                 
                 // HND10の機器（AL: 20台、NAL: 20台、Monitor: 10台）
                 for (let i = 1; i <= 20; i++) {
@@ -721,51 +781,87 @@
             }
             
             // 個別機器を予約に割り当て
-            function assignEquipmentToReservation(site, nonAmazonCount, amazonCount, monitorCount, userAlias) {
-                const equipmentList = getEquipmentData();
-                const assigned = [];
-                
-                // Non-Amazon PCを割り当て
-                const availableNonAmazon = equipmentList.filter(eq => 
-                    eq.site === site && 
-                    eq.type === 'Non-Amazon PC' && 
-                    eq.status === 'available'
-                );
-                for (let i = 0; i < nonAmazonCount && i < availableNonAmazon.length; i++) {
-                    availableNonAmazon[i].status = 'in_use';
-                    availableNonAmazon[i].currentUser = userAlias;
-                    assigned.push(availableNonAmazon[i].code);
+            async function assignEquipmentToReservation(site, nonAmazonCount, amazonCount, monitorCount, userAlias) {
+                try {
+                    const equipmentList = await getEquipmentData();
+                    const assigned = [];
+                    
+                    // Non-Amazon PCを割り当て
+                    const availableNonAmazon = equipmentList.filter(eq => 
+                        eq.site === site && 
+                        eq.type === 'Non-Amazon PC' && 
+                        eq.status === 'available'
+                    );
+                    for (let i = 0; i < nonAmazonCount && i < availableNonAmazon.length; i++) {
+                        const code = availableNonAmazon[i].code;
+                        await updateEquipmentStatus(code, 'in_use', userAlias);
+                        assigned.push(code);
+                    }
+                    
+                    // Amazon PCを割り当て
+                    const availableAmazon = equipmentList.filter(eq => 
+                        eq.site === site && 
+                        eq.type === 'Amazon PC' && 
+                        eq.status === 'available'
+                    );
+                    for (let i = 0; i < amazonCount && i < availableAmazon.length; i++) {
+                        const code = availableAmazon[i].code;
+                        await updateEquipmentStatus(code, 'in_use', userAlias);
+                        assigned.push(code);
+                    }
+                    
+                    // Monitorを割り当て
+                    const availableMonitors = equipmentList.filter(eq => 
+                        eq.site === site && 
+                        eq.type === 'Monitor' && 
+                        eq.status === 'available'
+                    );
+                    for (let i = 0; i < monitorCount && i < availableMonitors.length; i++) {
+                        const code = availableMonitors[i].code;
+                        await updateEquipmentStatus(code, 'in_use', userAlias);
+                        assigned.push(code);
+                    }
+                    
+                    return assigned;
+                } catch (error) {
+                    console.error('機器割り当てエラー:', error);
+                    return [];
                 }
-                
-                // Amazon PCを割り当て
-                const availableAmazon = equipmentList.filter(eq => 
-                    eq.site === site && 
-                    eq.type === 'Amazon PC' && 
-                    eq.status === 'available'
-                );
-                for (let i = 0; i < amazonCount && i < availableAmazon.length; i++) {
-                    availableAmazon[i].status = 'in_use';
-                    availableAmazon[i].currentUser = userAlias;
-                    assigned.push(availableAmazon[i].code);
-                }
-                
-                // Monitorを割り当て
-                const availableMonitors = equipmentList.filter(eq => 
-                    eq.site === site && 
-                    eq.type === 'Monitor' && 
-                    eq.status === 'available'
-                );
-                for (let i = 0; i < monitorCount && i < availableMonitors.length; i++) {
-                    availableMonitors[i].status = 'in_use';
-                    availableMonitors[i].currentUser = userAlias;
-                    assigned.push(availableMonitors[i].code);
-                }
-                
-                saveEquipmentData(equipmentList);
-                return assigned;
             }
             
-            let inventory = getInventoryData();
+            async function updateEquipmentStatus(code, status, userAlias = null) {
+                try {
+                    const response = await fetch(`${API_BASE_URL}/equipment/${code}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            status: status,
+                            current_user_alias: userAlias
+                        })
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error('機器ステータスの更新に失敗しました');
+                    }
+                    
+                    return await response.json();
+                } catch (error) {
+                    console.error('機器ステータス更新エラー:', error);
+                    throw error;
+                }
+            }
+            
+            let inventory = {};
+            
+            // 初期データをロード
+            async function initializeInventory() {
+                inventory = await getInventoryData();
+            }
+            
+            // ページロード時にデータを取得
+            initializeInventory();
             
             // メール通知機能
             function showEmailNotification(reservationData, successMsg) {
@@ -1380,23 +1476,25 @@ Amazon IT`;
                     rentalDays: rentalDays
                 };
 
-                // 在庫を減算
-                const selectedSite = formData.pickupSite;
-                if (inventory[selectedSite]) {
-                    inventory[selectedSite]['Non-Amazon PC'].available -= formData.nonAmazonPC;
-                    inventory[selectedSite]['Amazon PC'].available -= formData.amazonPC;
-                    inventory[selectedSite]['Monitor'].available -= formData.monitors;
-                    
-                    saveInventoryData(inventory);
-                }
+                try {
+                    // 個別機器を割り当て
+                    const assignedEquipment = await assignEquipmentToReservation(
+                        formData.pickupSite,
+                        formData.nonAmazonPC,
+                        formData.amazonPC,
+                        formData.monitors,
+                        formData.alias
+                    );
+                    formData.assignedEquipment = assignedEquipment;
 
-                // 個別機器を割り当て
-                const assignedEquipment = assignEquipmentToReservation(
-                    selectedSite,
-                    formData.nonAmazonPC,
-                    formData.amazonPC,
-                    formData.monitors,
-                    formData.alias
+                    // 予約IDを生成
+                    const reservationId = 'RES-' + Date.now().toString().slice(-8);
+                    formData.reservationId = reservationId;
+                    formData.status = 'active';
+                    formData.createdAt = new Date().toISOString();
+
+                    // 予約データを保存
+                    await saveReservation(formData);
                 );
                 formData.assignedEquipment = assignedEquipment;
 
