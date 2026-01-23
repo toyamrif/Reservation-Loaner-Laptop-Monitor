@@ -432,6 +432,39 @@ async function createReservation(event) {
   try {
     await client.query('BEGIN');
     
+    // 在庫確認
+    for (const eq of equipment) {
+      const inventoryCheck = await client.query(
+        `SELECT available_quantity FROM inventory 
+         WHERE site = $1 AND equipment_type = $2`,
+        [pickup_site, eq.equipment_type]
+      );
+      
+      if (inventoryCheck.rows.length === 0) {
+        throw new Error(`Equipment type ${eq.equipment_type} not found at site ${pickup_site}`);
+      }
+      
+      // 期間内の予約済み数量を計算
+      const reservedCheck = await client.query(
+        `SELECT COALESCE(SUM(re.quantity), 0) as reserved_quantity
+         FROM reservations r
+         JOIN reservation_equipment re ON r.id = re.reservation_id
+         WHERE r.pickup_site = $1 
+           AND re.equipment_type = $2
+           AND r.status NOT IN ('cancelled')
+           AND (r.start_date <= $4 AND r.end_date >= $3)`,
+        [pickup_site, eq.equipment_type, start_date, end_date]
+      );
+      
+      const totalQuantity = inventoryCheck.rows[0].available_quantity;
+      const reservedQuantity = parseInt(reservedCheck.rows[0].reserved_quantity);
+      const availableQuantity = totalQuantity - reservedQuantity;
+      
+      if (availableQuantity < eq.quantity) {
+        throw new Error(`Insufficient inventory for ${eq.equipment_type}. Available: ${availableQuantity}, Requested: ${eq.quantity}`);
+      }
+    }
+    
     // 予約作成
     const reservationResult = await client.query(
       `INSERT INTO reservations (user_alias, pickup_site, start_date, end_date, status)
@@ -453,10 +486,26 @@ async function createReservation(event) {
     
     await client.query('COMMIT');
     
+    // 完全な予約情報を返す
+    const fullReservation = await pool.query(
+      `SELECT r.*, 
+              json_agg(
+                json_build_object(
+                  'equipment_type', re.equipment_type,
+                  'quantity', re.quantity
+                )
+              ) as equipment
+       FROM reservations r
+       LEFT JOIN reservation_equipment re ON r.id = re.reservation_id
+       WHERE r.id = $1
+       GROUP BY r.id`,
+      [reservation.id]
+    );
+    
     return {
       statusCode: 201,
       headers: corsHeaders,
-      body: JSON.stringify(reservation)
+      body: JSON.stringify(fullReservation.rows[0])
     };
   } catch (error) {
     await client.query('ROLLBACK');
@@ -465,3 +514,209 @@ async function createReservation(event) {
     client.release();
   }
 }
+
+/**
+ * 予約詳細取得
+ */
+async function getReservationById(event) {
+  const reservationId = event.path.split('/').pop();
+  
+  const result = await pool.query(
+    `SELECT r.*, 
+            json_agg(
+              json_build_object(
+                'equipment_type', re.equipment_type,
+                'quantity', re.quantity
+              )
+            ) as equipment
+     FROM reservations r
+     LEFT JOIN reservation_equipment re ON r.id = re.reservation_id
+     WHERE r.id = $1
+     GROUP BY r.id`,
+    [reservationId]
+  );
+  
+  if (result.rows.length === 0) {
+    return {
+      statusCode: 404,
+      headers: corsHeaders,
+      body: JSON.stringify({ error: 'Reservation not found' })
+    };
+  }
+  
+  return {
+    statusCode: 200,
+    headers: corsHeaders,
+    body: JSON.stringify(result.rows[0])
+  };
+}
+
+/**
+ * 予約更新
+ */
+async function updateReservation(event) {
+  const reservationId = event.path.split('/').pop();
+  const body = JSON.parse(event.body);
+  const { status, start_date, end_date } = body;
+  
+  const client = await pool.connect();
+  
+  try {
+    await client.query('BEGIN');
+    
+    // 予約存在確認
+    const checkResult = await client.query(
+      'SELECT * FROM reservations WHERE id = $1',
+      [reservationId]
+    );
+    
+    if (checkResult.rows.length === 0) {
+      throw new Error('Reservation not found');
+    }
+    
+    const updates = [];
+    const params = [reservationId];
+    let paramIndex = 2;
+    
+    if (status !== undefined) {
+      params.push(status);
+      updates.push(`status = $${paramIndex++}`);
+    }
+    
+    if (start_date !== undefined) {
+      params.push(start_date);
+      updates.push(`start_date = $${paramIndex++}`);
+    }
+    
+    if (end_date !== undefined) {
+      params.push(end_date);
+      updates.push(`end_date = $${paramIndex++}`);
+    }
+    
+    if (updates.length === 0) {
+      throw new Error('No fields to update');
+    }
+    
+    updates.push('updated_at = NOW()');
+    
+    await client.query(
+      `UPDATE reservations SET ${updates.join(', ')} WHERE id = $1`,
+      params
+    );
+    
+    await client.query('COMMIT');
+    
+    // 更新後の予約情報を返す
+    const result = await pool.query(
+      `SELECT r.*, 
+              json_agg(
+                json_build_object(
+                  'equipment_type', re.equipment_type,
+                  'quantity', re.quantity
+                )
+              ) as equipment
+       FROM reservations r
+       LEFT JOIN reservation_equipment re ON r.id = re.reservation_id
+       WHERE r.id = $1
+       GROUP BY r.id`,
+      [reservationId]
+    );
+    
+    return {
+      statusCode: 200,
+      headers: corsHeaders,
+      body: JSON.stringify(result.rows[0])
+    };
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+/**
+ * 予約キャンセル
+ */
+async function cancelReservation(event) {
+  const reservationId = event.path.split('/')[2]; // /reservations/:id/cancel
+  
+  const client = await pool.connect();
+  
+  try {
+    await client.query('BEGIN');
+    
+    // 予約情報取得
+    const reservationResult = await client.query(
+      `SELECT * FROM reservations WHERE id = $1 AND status != 'cancelled'`,
+      [reservationId]
+    );
+    
+    if (reservationResult.rows.length === 0) {
+      throw new Error('Reservation not found or already cancelled');
+    }
+    
+    // 予約ステータスを「キャンセル」に更新
+    await client.query(
+      `UPDATE reservations 
+       SET status = 'cancelled', updated_at = NOW()
+       WHERE id = $1`,
+      [reservationId]
+    );
+    
+    // 機器割り当てがある場合は解除
+    await client.query(
+      `UPDATE equipment_items 
+       SET status = 'available', 
+           current_user_alias = NULL,
+           updated_at = NOW()
+       WHERE id IN (
+         SELECT equipment_id 
+         FROM equipment_usage_history 
+         WHERE reservation_id = $1 AND end_date IS NULL
+       )`,
+      [reservationId]
+    );
+    
+    // 使用履歴を終了
+    await client.query(
+      `UPDATE equipment_usage_history 
+       SET end_date = NOW()
+       WHERE reservation_id = $1 AND end_date IS NULL`,
+      [reservationId]
+    );
+    
+    await client.query('COMMIT');
+    
+    // キャンセル後の予約情報を返す
+    const result = await pool.query(
+      `SELECT r.*, 
+              json_agg(
+                json_build_object(
+                  'equipment_type', re.equipment_type,
+                  'quantity', re.quantity
+                )
+              ) as equipment
+       FROM reservations r
+       LEFT JOIN reservation_equipment re ON r.id = re.reservation_id
+       WHERE r.id = $1
+       GROUP BY r.id`,
+      [reservationId]
+    );
+    
+    return {
+      statusCode: 200,
+      headers: corsHeaders,
+      body: JSON.stringify({
+        message: 'Reservation cancelled successfully',
+        reservation: result.rows[0]
+      })
+    };
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
