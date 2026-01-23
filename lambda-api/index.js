@@ -99,7 +99,12 @@ async function getEquipment(event) {
   
   query += ` ORDER BY 
     site ASC, 
-    equipment_type ASC, 
+    CASE equipment_type 
+      WHEN 'amazon_pc' THEN 1 
+      WHEN 'non_amazon_pc' THEN 2 
+      WHEN 'monitor' THEN 3 
+      ELSE 4 
+    END ASC,
     CASE 
       WHEN equipment_code ~ '^[A-Z]+[0-9]+$' THEN 
         REGEXP_REPLACE(equipment_code, '[0-9]+', '', 'g') || LPAD(REGEXP_REPLACE(equipment_code, '[^0-9]', '', 'g'), 10, '0')
