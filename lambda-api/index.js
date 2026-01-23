@@ -53,6 +53,10 @@ exports.handler = async (event) => {
       return await updateEquipment(event);
     } else if (path === '/inventory' && method === 'GET') {
       return await getInventory(event);
+    } else if (path === '/inventory/fix' && method === 'POST') {
+      return await fixInventoryQuantities(event);
+    } else if (path === '/database/reset' && method === 'POST') {
+      return await resetDatabase(event);
     } else if (path === '/reservations' && method === 'GET') {
       return await getReservations(event);
     } else if (path === '/reservations' && method === 'POST') {
@@ -93,7 +97,14 @@ async function getEquipment(event) {
     query += ` AND status = $${params.length}`;
   }
   
-  query += ' ORDER BY equipment_code ASC';
+  query += ` ORDER BY 
+    site ASC, 
+    equipment_type ASC, 
+    CASE 
+      WHEN equipment_code ~ '^[A-Z]+[0-9]+$' THEN 
+        REGEXP_REPLACE(equipment_code, '[0-9]+', '', 'g') || LPAD(REGEXP_REPLACE(equipment_code, '[^0-9]', '', 'g'), 10, '0')
+      ELSE equipment_code 
+    END ASC`;
   
   const result = await pool.query(query, params);
   
@@ -207,6 +218,163 @@ async function getInventory(event) {
     headers: corsHeaders,
     body: JSON.stringify(result.rows)
   };
+}
+
+/**
+ * 在庫数量を正しい値に修正（一時的なエンドポイント）
+ */
+async function fixInventoryQuantities(event) {
+  const client = await pool.connect();
+  
+  try {
+    await client.query('BEGIN');
+    
+    // 全サイトの在庫を正しい値に更新
+    await client.query(`
+      UPDATE inventory 
+      SET total_quantity = 20, available_quantity = 20 
+      WHERE equipment_type = 'amazon_pc'
+    `);
+    
+    await client.query(`
+      UPDATE inventory 
+      SET total_quantity = 20, available_quantity = 20 
+      WHERE equipment_type = 'non_amazon_pc'
+    `);
+    
+    await client.query(`
+      UPDATE inventory 
+      SET total_quantity = 10, available_quantity = 10 
+      WHERE equipment_type = 'monitor'
+    `);
+    
+    await client.query('COMMIT');
+    
+    // 更新後の在庫を取得
+    const result = await client.query('SELECT * FROM inventory ORDER BY site, equipment_type');
+    
+    return {
+      statusCode: 200,
+      headers: corsHeaders,
+      body: JSON.stringify({
+        message: 'Inventory quantities fixed successfully',
+        inventory: result.rows
+      })
+    };
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+/**
+ * データベースを完全リセット（一時的なエンドポイント）
+ */
+async function resetDatabase(event) {
+  const client = await pool.connect();
+  
+  try {
+    await client.query('BEGIN');
+    
+    // 全データ削除（外部キー制約を考慮した順序）
+    await client.query('DELETE FROM reservation_equipment');
+    await client.query('DELETE FROM reservations');
+    await client.query('DELETE FROM notification_logs');
+    await client.query('DELETE FROM equipment_items');
+    await client.query('DELETE FROM inventory');
+    await client.query('DELETE FROM site_managers');
+    
+    // equipment_codeのユニーク制約を変更（site + equipment_codeの組み合わせでユニーク）
+    await client.query('ALTER TABLE equipment_items DROP CONSTRAINT IF EXISTS equipment_items_equipment_code_key');
+    await client.query('ALTER TABLE equipment_items ADD CONSTRAINT equipment_items_site_code_unique UNIQUE (site, equipment_code)');
+    
+    // 在庫データ投入
+    await client.query(`
+      INSERT INTO inventory (site, equipment_type, total_quantity, available_quantity, maintenance_quantity) VALUES
+      ('HND10', 'amazon_pc', 20, 20, 0),
+      ('HND10', 'non_amazon_pc', 20, 20, 0),
+      ('HND10', 'monitor', 10, 10, 0),
+      ('HND17', 'amazon_pc', 20, 20, 0),
+      ('HND17', 'non_amazon_pc', 20, 20, 0),
+      ('HND17', 'monitor', 10, 10, 0),
+      ('HND21', 'amazon_pc', 20, 20, 0),
+      ('HND21', 'non_amazon_pc', 20, 20, 0),
+      ('HND21', 'monitor', 10, 10, 0)
+    `);
+    
+    // 全サイトの機器データを一括投入
+    const allEquipment = [];
+    
+    // HND10の機器
+    for (let i = 1; i <= 20; i++) {
+      allEquipment.push(`('AL${i}', 'amazon_pc', 'HND10', 'available', 'AMZ-HND10-${String(i).padStart(3, '0')}', 'ThinkPad X1 Carbon', '2024-01-15')`);
+    }
+    for (let i = 1; i <= 20; i++) {
+      allEquipment.push(`('NAL${i}', 'non_amazon_pc', 'HND10', 'available', 'NAL-HND10-${String(i).padStart(3, '0')}', '${i <= 10 ? 'Dell Latitude 7420' : 'HP EliteBook 840'}', '2024-01-20')`);
+    }
+    for (let i = 1; i <= 10; i++) {
+      allEquipment.push(`('Monitor${i}', 'monitor', 'HND10', 'available', 'MON-HND10-${String(i).padStart(3, '0')}', '${i <= 5 ? 'Dell U2720Q 27inch' : 'LG 27UP850 27inch'}', '2024-01-10')`);
+    }
+    
+    // HND17の機器
+    for (let i = 1; i <= 20; i++) {
+      allEquipment.push(`('AL${i}', 'amazon_pc', 'HND17', 'available', 'AMZ-HND17-${String(i).padStart(3, '0')}', 'ThinkPad X1 Carbon', '2024-01-18')`);
+    }
+    for (let i = 1; i <= 20; i++) {
+      allEquipment.push(`('NAL${i}', 'non_amazon_pc', 'HND17', 'available', 'NAL-HND17-${String(i).padStart(3, '0')}', '${i <= 10 ? 'Dell Latitude 7420' : 'HP EliteBook 840'}', '2024-01-22')`);
+    }
+    for (let i = 1; i <= 10; i++) {
+      allEquipment.push(`('Monitor${i}', 'monitor', 'HND17', 'available', 'MON-HND17-${String(i).padStart(3, '0')}', '${i <= 5 ? 'Dell U2720Q 27inch' : 'LG 27UP850 27inch'}', '2024-01-12')`);
+    }
+    
+    // HND21の機器
+    for (let i = 1; i <= 20; i++) {
+      allEquipment.push(`('AL${i}', 'amazon_pc', 'HND21', 'available', 'AMZ-HND21-${String(i).padStart(3, '0')}', 'ThinkPad X1 Carbon', '2024-01-16')`);
+    }
+    for (let i = 1; i <= 20; i++) {
+      allEquipment.push(`('NAL${i}', 'non_amazon_pc', 'HND21', 'available', 'NAL-HND21-${String(i).padStart(3, '0')}', '${i <= 10 ? 'Dell Latitude 7420' : 'HP EliteBook 840'}', '2024-01-24')`);
+    }
+    for (let i = 1; i <= 10; i++) {
+      allEquipment.push(`('Monitor${i}', 'monitor', 'HND21', 'available', 'MON-HND21-${String(i).padStart(3, '0')}', '${i <= 5 ? 'Dell U2720Q 27inch' : 'LG 27UP850 27inch'}', '2024-01-14')`);
+    }
+    
+    await client.query(`
+      INSERT INTO equipment_items (equipment_code, equipment_type, site, status, serial_number, model, purchase_date) VALUES
+      ${allEquipment.join(',\n')}
+    `);
+    
+    // サイト担当者データ投入
+    await client.query(`
+      INSERT INTO site_managers (site, user_alias, slack_user_id, email, is_active) VALUES
+      ('HND10', 'itadmin1', 'U01234567', 'itadmin1@company.com', true),
+      ('HND10', 'itadmin2', 'U01234568', 'itadmin2@company.com', true),
+      ('HND17', 'itadmin3', 'U01234569', 'itadmin3@company.com', true),
+      ('HND21', 'itadmin4', 'U01234570', 'itadmin4@company.com', true),
+      ('HND21', 'itadmin5', 'U01234571', 'itadmin5@company.com', true)
+    `);
+    
+    await client.query('COMMIT');
+    
+    return {
+      statusCode: 200,
+      headers: corsHeaders,
+      body: JSON.stringify({
+        message: 'Database reset successfully',
+        summary: {
+          inventory: '9 records (3 sites x 3 equipment types)',
+          equipment_items: '150 records (50 per site)',
+          site_managers: '5 records'
+        }
+      })
+    };
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
 }
 
 /**
