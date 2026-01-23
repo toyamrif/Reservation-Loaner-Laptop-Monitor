@@ -61,6 +61,12 @@ exports.handler = async (event) => {
       return await getReservations(event);
     } else if (path === '/reservations' && method === 'POST') {
       return await createReservation(event);
+    } else if (path.match(/^\/reservations\/[^\/]+$/) && method === 'GET') {
+      return await getReservationById(event);
+    } else if (path.match(/^\/reservations\/[^\/]+$/) && method === 'PUT') {
+      return await updateReservation(event);
+    } else if (path.match(/^\/reservations\/[^\/]+\/cancel$/) && method === 'POST') {
+      return await cancelReservation(event);
     } else {
       return {
         statusCode: 404,
