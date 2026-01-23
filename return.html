@@ -337,40 +337,71 @@
             
             let html = '';
             
-            reservations.forEach(reservation => {
-                const createdDate = new Date(reservation.createdAt).toLocaleDateString('ja-JP');
+            for (const reservation of reservations) {
+                const createdDate = new Date(reservation.created_at).toLocaleDateString('ja-JP');
                 const returnedDate = reservation.returnedAt ? 
                     new Date(reservation.returnedAt).toLocaleDateString('ja-JP') : '';
+                
+                // 予約詳細を取得して機器情報を含める
+                let equipmentHtml = '';
+                try {
+                    const detailResponse = await fetch(`${API_BASE_URL}/reservations/${reservation.id}`);
+                    if (detailResponse.ok) {
+                        const detail = await detailResponse.json();
+                        if (detail.allocated_equipment && detail.allocated_equipment.length > 0) {
+                            equipmentHtml = '<br><strong>🔧 割り当てられた機器:</strong><br>';
+                            detail.allocated_equipment.forEach(eq => {
+                                const typeLabel = eq.type === 'amazon_pc' ? 'Amazon PC' : 
+                                                 eq.type === 'non_amazon_pc' ? 'Non-Amazon PC' : 'Monitor';
+                                equipmentHtml += `&nbsp;&nbsp;• ${eq.equipment_code} (${typeLabel})<br>`;
+                            });
+                        }
+                    }
+                } catch (error) {
+                    console.error('機器情報取得エラー:', error);
+                }
+                
+                // 機器数を計算
+                let equipmentCounts = { amazon_pc: 0, non_amazon_pc: 0, monitor: 0 };
+                if (reservation.equipment && Array.isArray(reservation.equipment)) {
+                    reservation.equipment.forEach(eq => {
+                        if (eq.equipment_type) {
+                            equipmentCounts[eq.equipment_type] = eq.quantity || 0;
+                        }
+                    });
+                }
                 
                 html += `
                     <div class="reservation-card">
                         <div class="reservation-header">
-                            <div class="reservation-id">${reservation.reservationId}</div>
+                            <div class="reservation-id">${reservation.id}</div>
                             <div class="status-badge ${reservation.status === 'returned' ? 'status-returned' : 'status-active'}">
-                                ${reservation.status === 'returned' ? '返却済み' : '利用中'}
+                                ${reservation.status === 'returned' ? '返却済み' : 
+                                  reservation.status === 'cancelled' ? 'キャンセル済み' : '利用中'}
                             </div>
                         </div>
                         <div class="reservation-details">
-                            <strong>👤 利用者:</strong> ${reservation.alias}<br>
-                            <strong>📍 サイト:</strong> ${reservation.pickupSite}<br>
-                            <strong>📅 期間:</strong> ${reservation.startDate} ～ ${reservation.endDate}<br>
-                            <strong>💻 機器:</strong> Non-Amazon PC ${reservation.nonAmazonPC}台, Amazon PC ${reservation.amazonPC}台, モニター ${reservation.monitors}台<br>
+                            <strong>👤 利用者:</strong> ${reservation.user_alias}<br>
+                            <strong>📍 サイト:</strong> ${reservation.pickup_site}<br>
+                            <strong>📅 期間:</strong> ${reservation.start_date.split('T')[0]} ～ ${reservation.end_date.split('T')[0]}<br>
+                            <strong>💻 機器:</strong> Non-Amazon PC ${equipmentCounts.non_amazon_pc}台, Amazon PC ${equipmentCounts.amazon_pc}台, モニター ${equipmentCounts.monitor}台<br>
                             <strong>📝 予約日:</strong> ${createdDate}
                             ${returnedDate ? `<br><strong>🔄 返却日:</strong> ${returnedDate}` : ''}
+                            ${equipmentHtml}
                         </div>
-                        ${reservation.status === 'active' ? 
-                            `<button class="return-btn" onclick="returnEquipment('${reservation.reservationId}')">🔄 返却処理</button>` :
+                        ${reservation.status === 'pending' || reservation.status === 'confirmed' ? 
+                            `<button class="return-btn" onclick="returnEquipment('${reservation.id}')">🔄 返却処理</button>` :
                             `<button class="return-btn" disabled>返却済み</button>`
                         }
                     </div>
                 `;
-            });
+            }
             
             container.innerHTML = html;
         }
         
         async function searchReservations() {
-            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const searchTerm = document.getElementById('searchInput').value.trim().toLowerCase();
             const allReservations = await getReservations();
             
             if (!searchTerm) {
@@ -379,9 +410,9 @@
             }
             
             const filteredReservations = allReservations.filter(reservation => 
-                reservation.reservationId.toLowerCase().includes(searchTerm) ||
-                reservation.alias.toLowerCase().includes(searchTerm) ||
-                reservation.pickupSite.toLowerCase().includes(searchTerm)
+                reservation.id.toLowerCase().includes(searchTerm) ||
+                reservation.user_alias.toLowerCase().includes(searchTerm) ||
+                reservation.pickup_site.toLowerCase().includes(searchTerm)
             );
             
             await renderReservations(filteredReservations);
@@ -390,7 +421,7 @@
         async function showAllReservations() {
             const allReservations = await getReservations();
             // 新しい順にソート
-            allReservations.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+            allReservations.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
             await renderReservations(allReservations);
         }
         
