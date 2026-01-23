@@ -105,11 +105,8 @@ async function getEquipment(event) {
       WHEN 'monitor' THEN 3 
       ELSE 4 
     END ASC,
-    CASE 
-      WHEN equipment_code ~ '^[A-Z]+[0-9]+$' THEN 
-        REGEXP_REPLACE(equipment_code, '[0-9]+', '', 'g') || LPAD(REGEXP_REPLACE(equipment_code, '[^0-9]', '', 'g'), 10, '0')
-      ELSE equipment_code 
-    END ASC`;
+    SUBSTRING(equipment_code FROM '^[A-Za-z]+') ASC,
+    CAST(SUBSTRING(equipment_code FROM '[0-9]+$') AS INTEGER) ASC`;
   
   const result = await pool.query(query, params);
   
