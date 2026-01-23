@@ -1361,24 +1361,43 @@
                 };
 
                 try {
-                    // 個別機器を割り当て
-                    const assignedEquipment = await assignEquipmentToReservation(
-                        formData.pickupSite,
-                        formData.nonAmazonPC,
-                        formData.amazonPC,
-                        formData.monitors,
-                        formData.alias
-                    );
-                    formData.assignedEquipment = assignedEquipment;
+                    // APIで予約を作成（自動機器割り当て含む）
+                    const equipment = [];
+                    if (formData.nonAmazonPC > 0) {
+                        equipment.push({ type: 'non_amazon_pc', quantity: formData.nonAmazonPC });
+                    }
+                    if (formData.amazonPC > 0) {
+                        equipment.push({ type: 'amazon_pc', quantity: formData.amazonPC });
+                    }
+                    if (formData.monitors > 0) {
+                        equipment.push({ type: 'monitor', quantity: formData.monitors });
+                    }
 
-                    // 予約IDを生成
-                    const reservationId = 'RES-' + Date.now().toString().slice(-8);
+                    const reservationResponse = await fetch(`${API_BASE_URL}/reservations`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            user_alias: formData.alias,
+                            pickup_site: formData.pickupSite,
+                            start_date: formData.startDate,
+                            end_date: formData.endDate,
+                            equipment: equipment
+                        })
+                    });
+
+                    if (!reservationResponse.ok) {
+                        const error = await reservationResponse.json();
+                        throw new Error(error.error || '予約の作成に失敗しました');
+                    }
+
+                    const reservationData = await reservationResponse.json();
+                    const reservationId = reservationData.id;
+                    const allocatedEquipment = reservationData.allocated_equipment || [];
+                    
                     formData.reservationId = reservationId;
-                    formData.status = 'active';
-                    formData.createdAt = new Date().toISOString();
-
-                    // 予約データを保存
-                    await saveReservation(formData);
+                    formData.allocatedEquipment = allocatedEquipment;
 
                     // メール送信処理
                     const emailContent = generateEmailContent(formData);
@@ -1421,10 +1440,12 @@
                         successMsg += '• サイト: ' + formData.pickupSite + '\n';
                         successMsg += '• 期間: ' + formData.startDate + ' ～ ' + formData.endDate + '\n';
                         successMsg += '• 機器: Non-Amazon PC ' + formData.nonAmazonPC + '台, Amazon PC ' + formData.amazonPC + '台, モニター ' + formData.monitors + '台\n';
-                        if (assignedEquipment.length > 0) {
+                        if (allocatedEquipment.length > 0) {
                             successMsg += '\n割り当てられた機器:\n';
-                            assignedEquipment.forEach(code => {
-                                successMsg += '• ' + code + '\n';
+                            allocatedEquipment.forEach(eq => {
+                                const typeLabel = eq.type === 'amazon_pc' ? 'Amazon PC' : 
+                                                 eq.type === 'non_amazon_pc' ? 'Non-Amazon PC' : 'Monitor';
+                                successMsg += '• ' + eq.equipment_code + ' (' + typeLabel + ')\n';
                             });
                         }
                         successMsg += '\n✅ 確認メールを ' + formData.alias + '@amazon.co.jp に送信しました。';
