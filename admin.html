@@ -890,7 +890,7 @@
             let actionButtons = '';
             
             if (reservation.status === 'pending') {
-                statusBadge = '<span style="background: rgba(241, 196, 15, 0.8); padding: 5px 15px; border-radius: 5px;">保留中</span>';
+                statusBadge = '<span style="background: rgba(241, 196, 15, 0.8); padding: 5px 15px; border-radius: 5px;">未設置</span>';
                 actionButtons = `
                     <button onclick="markAsSetupComplete('${reservation.id}')" 
                             style="padding: 10px 20px; background: rgba(46, 204, 113, 0.8); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 500; margin-right: 10px;">
