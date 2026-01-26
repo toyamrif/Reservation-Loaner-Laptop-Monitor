@@ -250,6 +250,7 @@
         <div class="nav-buttons">
             <button class="nav-btn active" onclick="showSection('inventory')">在庫サマリー</button>
             <button class="nav-btn" onclick="showSection('equipment')">個別機器管理</button>
+            <button class="nav-btn" onclick="showSection('reservation-management')">予約管理</button>
             <button class="nav-btn" onclick="showSection('reservations')">予約状況</button>
             <a href="return.html" class="nav-btn">🔄 返却管理</a>
         </div>
@@ -283,6 +284,24 @@
                         🔄 詳細な返却管理画面へ
                     </a>
                 </div>
+            </div>
+        </div>
+        
+        <!-- 予約管理セクション -->
+        <div id="reservation-management" class="section">
+            <div style="color: white; padding: 20px;">
+                <h3 style="text-align: center; margin-bottom: 20px;">📦 予約管理</h3>
+                
+                <!-- 検索セクション -->
+                <div style="background: rgba(255, 255, 255, 0.1); border-radius: 15px; padding: 20px; margin-bottom: 20px;">
+                    <h4 style="margin-bottom: 15px;">🔍 予約検索</h4>
+                    <input type="text" id="reservationSearchInput" placeholder="予約IDまたはユーザー名で検索..." 
+                           style="width: 100%; padding: 12px; background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 8px; color: white; font-size: 16px; margin-bottom: 10px;">
+                    <button onclick="searchReservationForManagement()" style="padding: 10px 20px; background: rgba(52, 152, 219, 0.8); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 500;">検索</button>
+                </div>
+                
+                <!-- 検索結果表示 -->
+                <div id="reservationManagementResult"></div>
             </div>
         </div>
         
@@ -811,3 +830,171 @@
     </script>
 </body>
 </html>
+
+        
+        // 予約管理機能
+        async function searchReservationForManagement() {
+            const searchTerm = document.getElementById('reservationSearchInput').value.trim();
+            const resultContainer = document.getElementById('reservationManagementResult');
+            
+            if (!searchTerm) {
+                resultContainer.innerHTML = '<div style="color: rgba(255,255,255,0.7); text-align: center; padding: 20px;">予約IDまたはユーザー名を入力してください</div>';
+                return;
+            }
+            
+            try {
+                const reservations = await getReservations();
+                const filtered = reservations.filter(r => 
+                    r.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    r.user_alias.toLowerCase().includes(searchTerm.toLowerCase())
+                );
+                
+                if (filtered.length === 0) {
+                    resultContainer.innerHTML = '<div style="color: rgba(255,255,255,0.7); text-align: center; padding: 20px;">予約が見つかりませんでした</div>';
+                    return;
+                }
+                
+                // 予約詳細を表示
+                await renderReservationManagement(filtered[0]);
+            } catch (error) {
+                console.error('予約検索エラー:', error);
+                resultContainer.innerHTML = '<div style="color: #e74c3c; text-align: center; padding: 20px;">エラーが発生しました: ' + error.message + '</div>';
+            }
+        }
+        
+        async function renderReservationManagement(reservation) {
+            const resultContainer = document.getElementById('reservationManagementResult');
+            
+            // 予約詳細を取得（機器情報含む）
+            let allocatedEquipment = [];
+            try {
+                const detailResponse = await fetch(`${API_BASE_URL}/reservations/${reservation.id}`);
+                if (detailResponse.ok) {
+                    const detail = await detailResponse.json();
+                    allocatedEquipment = detail.allocated_equipment || [];
+                }
+            } catch (error) {
+                console.error('機器情報取得エラー:', error);
+            }
+            
+            // 機器リストHTML
+            let equipmentHtml = '';
+            if (allocatedEquipment.length > 0) {
+                equipmentHtml = '<div style="margin-top: 15px;"><strong>🔧 割り当てられた機器:</strong><ul style="margin-top: 10px;">';
+                allocatedEquipment.forEach(eq => {
+                    const typeLabel = eq.type === 'amazon_pc' ? 'Amazon PC' : 
+                                     eq.type === 'non_amazon_pc' ? 'Non-Amazon PC' : 'Monitor';
+                    equipmentHtml += `<li>${eq.equipment_code} (${typeLabel})</li>`;
+                });
+                equipmentHtml += '</ul></div>';
+            }
+            
+            // ステータスバッジ
+            let statusBadge = '';
+            let actionButtons = '';
+            
+            if (reservation.status === 'pending') {
+                statusBadge = '<span style="background: rgba(241, 196, 15, 0.8); padding: 5px 15px; border-radius: 5px;">保留中</span>';
+                actionButtons = `
+                    <button onclick="markAsSetupComplete('${reservation.id}')" 
+                            style="padding: 10px 20px; background: rgba(46, 204, 113, 0.8); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 500; margin-right: 10px;">
+                        ✅ 設置完了
+                    </button>
+                `;
+            } else if (reservation.status === 'confirmed' || reservation.status === 'setup_complete') {
+                statusBadge = '<span style="background: rgba(46, 204, 113, 0.8); padding: 5px 15px; border-radius: 5px;">利用中</span>';
+                actionButtons = `
+                    <button onclick="markAsReturned('${reservation.id}')" 
+                            style="padding: 10px 20px; background: rgba(231, 76, 60, 0.8); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 500; margin-right: 10px;">
+                        🔄 返却完了
+                    </button>
+                `;
+            } else if (reservation.status === 'returned') {
+                statusBadge = '<span style="background: rgba(149, 165, 166, 0.8); padding: 5px 15px; border-radius: 5px;">返却済み</span>';
+                actionButtons = '<div style="color: rgba(255,255,255,0.7);">この予約は既に返却済みです</div>';
+            } else if (reservation.status === 'cancelled') {
+                statusBadge = '<span style="background: rgba(231, 76, 60, 0.8); padding: 5px 15px; border-radius: 5px;">キャンセル済み</span>';
+                actionButtons = '<div style="color: rgba(255,255,255,0.7);">この予約はキャンセルされています</div>';
+            }
+            
+            const html = `
+                <div style="background: rgba(255, 255, 255, 0.1); border-radius: 15px; padding: 20px; margin-bottom: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h4>予約詳細</h4>
+                        ${statusBadge}
+                    </div>
+                    <div style="line-height: 1.8;">
+                        <strong>予約ID:</strong> ${reservation.id}<br>
+                        <strong>👤 利用者:</strong> ${reservation.user_alias}<br>
+                        <strong>📍 サイト:</strong> ${reservation.pickup_site}<br>
+                        <strong>📅 期間:</strong> ${reservation.start_date.split('T')[0]} ～ ${reservation.end_date.split('T')[0]}<br>
+                        <strong>📝 予約日:</strong> ${new Date(reservation.created_at).toLocaleDateString('ja-JP')}
+                        ${equipmentHtml}
+                    </div>
+                    <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.2);">
+                        ${actionButtons}
+                    </div>
+                </div>
+            `;
+            
+            resultContainer.innerHTML = html;
+        }
+        
+        async function markAsSetupComplete(reservationId) {
+            if (!confirm('この予約を「設置完了」にしますか？')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/reservations/${reservationId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: 'setup_complete' })
+                });
+                
+                if (!response.ok) {
+                    throw new Error('ステータス更新に失敗しました');
+                }
+                
+                alert('設置完了にしました！');
+                searchReservationForManagement();
+            } catch (error) {
+                console.error('設置完了エラー:', error);
+                alert('エラーが発生しました: ' + error.message);
+            }
+        }
+        
+        async function markAsReturned(reservationId) {
+            if (!confirm('この予約を「返却完了」にしますか？\n\n機器のステータスも「利用可能」に戻ります。')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/reservations/${reservationId}/cancel`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                if (!response.ok) {
+                    throw new Error('返却処理に失敗しました');
+                }
+                
+                alert('返却完了しました！機器が利用可能になりました。');
+                searchReservationForManagement();
+            } catch (error) {
+                console.error('返却完了エラー:', error);
+                alert('エラーが発生しました: ' + error.message);
+            }
+        }
+        
+        // Enterキーで検索
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.getElementById('reservationSearchInput');
+            if (searchInput) {
+                searchInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        searchReservationForManagement();
+                    }
+                });
+            }
+        });
