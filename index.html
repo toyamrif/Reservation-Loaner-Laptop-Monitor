@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Loaner Laptop予約システム</title>
+    <title>Loaner機器予約システム</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700&display=swap');
         
@@ -388,7 +388,7 @@
     </div>
     
     <div class="container">
-        <h1 id="pageTitle">🖥️ Loaner Laptop予約システム</h1>
+        <h1 id="pageTitle">🖥️ Loaner機器予約システム</h1>
         
         <div class="progress-bar">
             <div class="progress-step active" data-step="1">
@@ -853,10 +853,10 @@
             function generateEmailContent(reservationData) {
                 const currentDate = new Date().toLocaleDateString('ja-JP');
                 
-                let emailText = '件名: 【Loaner Laptop予約システム】予約確認 - ' + reservationData.reservationId + '\n\n';
+                let emailText = '件名: 【Loaner機器予約システム】予約確認 - ' + reservationData.reservationId + '\n\n';
                 emailText += reservationData.alias + ' 様\n\n';
                 emailText += 'いつもお疲れ様です。\n';
-                emailText += 'Loaner Laptop予約システムより、予約確認のご連絡です。\n\n';
+                emailText += 'Loaner機器予約システムより、予約確認のご連絡です。\n\n';
                 emailText += '■ 予約詳細\n';
                 emailText += '予約ID: ' + reservationData.reservationId + '\n';
                 emailText += '利用者: ' + reservationData.alias + '\n';
@@ -934,7 +934,7 @@
             
             const translations = {
                 ja: {
-                    pageTitle: '🖥️ Loaner Laptop予約システム',
+                    pageTitle: '🖥️ Loaner機器予約システム',
                     aliasRequired: 'Aliasを入力してください。',
                     pickupSiteRequired: 'Pick Up Siteを選択してください。',
                     equipmentRequired: '少なくとも1つの機器を選択してください。',
@@ -955,7 +955,7 @@
                     alternativeSuggestion: '代替案をご確認ください'
                 },
                 en: {
-                    pageTitle: '🖥️ Loaner Laptop Reservation System',
+                    pageTitle: '🖥️ Loaner Equipment Reservation System',
                     aliasRequired: 'Please enter your Alias.',
                     pickupSiteRequired: 'Please select a Pick Up Site.',
                     equipmentRequired: 'Please select at least one equipment.',
@@ -1403,7 +1403,7 @@
                     const emailContent = generateEmailContent(formData);
                     const emailData = {
                         to: formData.alias + '@amazon.co.jp',
-                        subject: '【Loaner Laptop予約システム】予約確認 - ' + reservationId,
+                        subject: '【Loaner機器予約システム】予約確認 - ' + reservationId,
                         message: emailContent,
                         reservationData: formData
                     };

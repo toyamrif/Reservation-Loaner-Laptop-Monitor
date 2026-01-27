@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>返却管理 - Loaner Laptop予約システム</title>
+    <title>返却管理 - Loaner機器予約システム</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700&display=swap');
         
@@ -636,12 +636,12 @@
             
             const stationInfo = getPickupStationInfo(reservation.pickupSite);
             
-            return `件名: 【Loaner Laptop予約システム】返却完了確認 - ${reservation.reservationId}
+            return `件名: 【Loaner機器予約システム】返却完了確認 - ${reservation.reservationId}
 
 ${reservation.alias} 様
 
 いつもお疲れ様です。
-Loaner Laptop予約システムより、返却完了のご連絡です。
+Loaner機器予約システムより、返却完了のご連絡です。
 
 ■ 返却詳細
 予約ID: ${reservation.reservationId}
@@ -670,7 +670,7 @@ ${reservation.nonAmazonPC > 0 ? `・Non-Amazon PC: ${reservation.nonAmazonPC}台
 ・ITチーム: IT-Support@amazon.co.jp
 
 ---
-Loaner Laptop予約システム
+Loaner機器予約システム
 ITチーム`;
         }
         
