@@ -251,7 +251,6 @@
             <button class="nav-btn active" onclick="showSection('inventory')">在庫サマリー</button>
             <button class="nav-btn" onclick="showSection('equipment')">個別機器管理</button>
             <button class="nav-btn" onclick="showSection('reservation-management')">予約管理</button>
-            <button class="nav-btn" onclick="showSection('reservations')">予約状況</button>
             <a href="return.html" class="nav-btn">🔄 返却管理</a>
         </div>
         
@@ -274,18 +273,6 @@
             </div>
         </div>
         
-        <!-- 予約状況セクション -->
-        <div id="reservations" class="section">
-            <div style="color: white; padding: 20px;">
-                <h3 style="text-align: center; margin-bottom: 20px;">📋 予約状況サマリー</h3>
-                <div id="reservationSummary"></div>
-                <div style="text-align: center; margin-top: 20px;">
-                    <a href="return.html" style="padding: 12px 25px; background: rgba(231, 76, 60, 0.8); color: white; text-decoration: none; border-radius: 8px; font-weight: 500;">
-                        🔄 詳細な返却管理画面へ
-                    </a>
-                </div>
-            </div>
-        </div>
         
         <!-- 予約管理セクション -->
         <div id="reservation-management" class="section">
@@ -544,9 +531,7 @@
             event.target.classList.add('active');
             
             // セクションごとの処理
-            if (sectionName === 'reservations') {
-                updateReservationSummary();
-            } else if (sectionName === 'equipment') {
+            if (sectionName === 'equipment') {
                 renderEquipmentList();
             }
         }
@@ -564,42 +549,6 @@
             }
         }
         
-        async function updateReservationSummary() {
-            const reservations = await getReservations();
-            const activeReservations = reservations.filter(r => r.status === 'active');
-            const returnedReservations = reservations.filter(r => r.status === 'returned');
-            
-            let html = `
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 20px;">
-                    <div style="background: rgba(52, 152, 219, 0.2); padding: 20px; border-radius: 10px; text-align: center;">
-                        <h4 style="margin-bottom: 10px;">📊 総予約数</h4>
-                        <div style="font-size: 24px; font-weight: bold;">${reservations.length}</div>
-                    </div>
-                    <div style="background: rgba(231, 76, 60, 0.2); padding: 20px; border-radius: 10px; text-align: center;">
-                        <h4 style="margin-bottom: 10px;">🔄 利用中</h4>
-                        <div style="font-size: 24px; font-weight: bold;">${activeReservations.length}</div>
-                    </div>
-                    <div style="background: rgba(46, 204, 113, 0.2); padding: 20px; border-radius: 10px; text-align: center;">
-                        <h4 style="margin-bottom: 10px;">✅ 返却済み</h4>
-                        <div style="font-size: 24px; font-weight: bold;">${returnedReservations.length}</div>
-                    </div>
-                </div>
-            `;
-            
-            if (activeReservations.length > 0) {
-                html += '<h4 style="margin-bottom: 15px;">🔄 現在利用中の予約（最新5件）</h4>';
-                activeReservations.slice(0, 5).forEach(reservation => {
-                    html += `
-                        <div style="background: rgba(255, 255, 255, 0.1); padding: 15px; margin-bottom: 10px; border-radius: 8px;">
-                            <strong>${reservation.reservationId}</strong> - ${reservation.alias} (${reservation.pickupSite})<br>
-                            <small>期間: ${reservation.startDate} ～ ${reservation.endDate}</small>
-                        </div>
-                    `;
-                });
-            }
-            
-            document.getElementById('reservationSummary').innerHTML = html;
-        }
         
         function renderInventory() {
             const container = document.getElementById('inventoryDisplay');
