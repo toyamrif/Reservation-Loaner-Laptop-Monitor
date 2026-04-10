@@ -850,6 +850,18 @@
                 return modal;
             }
             
+            // 機器コードをユーザー向け表示名に変換
+            function formatEquipmentDisplayName(code) {
+                if (code.startsWith('NAL')) {
+                    return 'Non-Amazon Loaner ' + code.replace('NAL', '');
+                } else if (code.startsWith('AL')) {
+                    return 'Amazon Loaner ' + code.replace('AL', '');
+                } else if (code.startsWith('Monitor')) {
+                    return 'Monitor ' + code.replace('Monitor', '');
+                }
+                return code;
+            }
+            
             function generateEmailContent(reservationData) {
                 const currentDate = new Date().toLocaleDateString('ja-JP');
                 
@@ -1443,9 +1455,8 @@
                         if (allocatedEquipment.length > 0) {
                             successMsg += '\n割り当てられた機器:\n';
                             allocatedEquipment.forEach(eq => {
-                                const typeLabel = eq.type === 'amazon_pc' ? 'Amazon PC' : 
-                                                 eq.type === 'non_amazon_pc' ? 'Non-Amazon PC' : 'Monitor';
-                                successMsg += '• ' + eq.equipment_code + ' (' + typeLabel + ')\n';
+                                const displayName = formatEquipmentDisplayName(eq.equipment_code);
+                                successMsg += '• ' + displayName + '\n';
                             });
                         }
                         successMsg += '\n✅ 確認メールを ' + formData.alias + '@amazon.co.jp に送信しました。';
