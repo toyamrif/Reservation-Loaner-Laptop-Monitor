@@ -67,6 +67,10 @@ exports.handler = async (event) => {
       return await updateReservation(event);
     } else if (path.match(/^\/reservations\/[^\/]+\/cancel$/) && method === 'POST') {
       return await cancelReservation(event);
+    } else if (path.match(/^\/equipment\/[^\/]+\/history$/) && method === 'GET') {
+      return await getEquipmentHistory(event);
+    } else if (path.match(/^\/users\/[^\/]+\/history$/) && method === 'GET') {
+      return await getUserHistory(event);
     } else {
       return {
         statusCode: 404,
@@ -440,14 +444,15 @@ async function createReservation(event) {
     
     // 在庫確認
     for (const eq of equipment) {
+      const equipmentType = eq.type || eq.equipment_type;
       const inventoryCheck = await client.query(
         `SELECT available_quantity FROM inventory 
          WHERE site = $1 AND equipment_type = $2`,
-        [pickup_site, eq.equipment_type]
+        [pickup_site, equipmentType]
       );
       
       if (inventoryCheck.rows.length === 0) {
-        throw new Error(`Equipment type ${eq.equipment_type} not found at site ${pickup_site}`);
+        throw new Error(`Equipment type ${equipmentType} not found at site ${pickup_site}`);
       }
       
       // 期間内の予約済み数量を計算
@@ -459,7 +464,7 @@ async function createReservation(event) {
            AND re.equipment_type = $2
            AND r.status NOT IN ('cancelled')
            AND (r.start_date <= $4 AND r.end_date >= $3)`,
-        [pickup_site, eq.equipment_type, start_date, end_date]
+        [pickup_site, equipmentType, start_date, end_date]
       );
       
       const totalQuantity = inventoryCheck.rows[0].available_quantity;
@@ -467,7 +472,7 @@ async function createReservation(event) {
       const availableQuantity = totalQuantity - reservedQuantity;
       
       if (availableQuantity < eq.quantity) {
-        throw new Error(`Insufficient inventory for ${eq.equipment_type}. Available: ${availableQuantity}, Requested: ${eq.quantity}`);
+        throw new Error(`Insufficient inventory for ${equipmentType}. Available: ${availableQuantity}, Requested: ${eq.quantity}`);
       }
     }
     
@@ -481,19 +486,60 @@ async function createReservation(event) {
     
     const reservation = reservationResult.rows[0];
     
-    // 機器情報追加
+    // 機器情報追加と自動割り当て
+    const allocatedEquipment = [];
+    
     for (const eq of equipment) {
+      const equipmentType = eq.type || eq.equipment_type;
       await client.query(
         `INSERT INTO reservation_equipment (reservation_id, equipment_type, quantity)
          VALUES ($1, $2, $3)`,
-        [reservation.id, eq.equipment_type, eq.quantity]
+        [reservation.id, equipmentType, eq.quantity]
       );
+      
+      // 利用可能な機器を検索して割り当て
+      const availableItems = await client.query(
+        `SELECT id, equipment_code 
+         FROM equipment_items 
+         WHERE site = $1 
+           AND equipment_type = $2 
+           AND status = 'available'
+         ORDER BY equipment_code ASC
+         LIMIT $3`,
+        [pickup_site, equipmentType, eq.quantity]
+      );
+      
+      // 機器を予約に割り当て
+      for (const item of availableItems.rows) {
+        // 機器ステータスを「使用中」に更新
+        await client.query(
+          `UPDATE equipment_items 
+           SET status = 'in_use', 
+               current_user_alias = $1,
+               updated_at = NOW()
+           WHERE id = $2`,
+          [user_alias, item.id]
+        );
+        
+        // 使用履歴を記録
+        await client.query(
+          `INSERT INTO equipment_usage_history 
+           (equipment_id, reservation_id, user_alias, start_date, status)
+           VALUES ($1, $2, $3, $4, 'active')`,
+          [item.id, reservation.id, user_alias, start_date]
+        );
+        
+        allocatedEquipment.push({
+          type: equipmentType,
+          equipment_code: item.equipment_code
+        });
+      }
     }
     
     await client.query('COMMIT');
     
-    // 完全な予約情報を返す
-    const fullReservation = await pool.query(
+    // 完全な予約情報を返す（割り当てられた機器情報を含む）
+    const fullReservation = await client.query(
       `SELECT r.*, 
               json_agg(
                 json_build_object(
@@ -511,7 +557,10 @@ async function createReservation(event) {
     return {
       statusCode: 201,
       headers: corsHeaders,
-      body: JSON.stringify(fullReservation.rows[0])
+      body: JSON.stringify({
+        ...fullReservation.rows[0],
+        allocated_equipment: allocatedEquipment
+      })
     };
   } catch (error) {
     await client.query('ROLLBACK');
@@ -726,3 +775,116 @@ async function cancelReservation(event) {
   }
 }
 
+
+/**
+ * 機器別使用履歴取得（過去1年間）
+ */
+async function getEquipmentHistory(event) {
+  const equipmentCode = decodeURIComponent(event.path.split('/')[2]);
+  
+  try {
+    // 機器の存在確認
+    const equipmentCheck = await pool.query(
+      'SELECT id, equipment_code, equipment_type, site FROM equipment_items WHERE equipment_code = $1',
+      [equipmentCode]
+    );
+    
+    if (equipmentCheck.rows.length === 0) {
+      return {
+        statusCode: 404,
+        headers: corsHeaders,
+        body: JSON.stringify({ error: 'Equipment not found' })
+      };
+    }
+    
+    const equipment = equipmentCheck.rows[0];
+    
+    // 過去1年間の使用履歴を取得
+    const historyResult = await pool.query(
+      `SELECT 
+        h.id,
+        h.user_alias,
+        h.start_date,
+        h.end_date,
+        h.status,
+        r.id as reservation_id,
+        r.pickup_site,
+        r.status as reservation_status
+       FROM equipment_usage_history h
+       JOIN reservations r ON h.reservation_id = r.id
+       WHERE h.equipment_id = $1
+         AND h.start_date >= NOW() - INTERVAL '1 year'
+       ORDER BY h.start_date DESC`,
+      [equipment.id]
+    );
+    
+    return {
+      statusCode: 200,
+      headers: corsHeaders,
+      body: JSON.stringify({
+        equipment: {
+          code: equipment.equipment_code,
+          type: equipment.equipment_type,
+          site: equipment.site
+        },
+        history: historyResult.rows,
+        period: 'past_1_year'
+      })
+    };
+  } catch (error) {
+    console.error('Error fetching equipment history:', error);
+    return {
+      statusCode: 500,
+      headers: corsHeaders,
+      body: JSON.stringify({ error: error.message })
+    };
+  }
+}
+
+/**
+ * 使用者別履歴取得（過去1年間）
+ */
+async function getUserHistory(event) {
+  const userAlias = decodeURIComponent(event.path.split('/')[2]);
+  
+  try {
+    // 過去1年間の使用履歴を取得
+    const historyResult = await pool.query(
+      `SELECT 
+        h.id,
+        h.start_date,
+        h.end_date,
+        h.status,
+        e.equipment_code,
+        e.equipment_type,
+        e.site,
+        r.id as reservation_id,
+        r.pickup_site,
+        r.status as reservation_status
+       FROM equipment_usage_history h
+       JOIN equipment_items e ON h.equipment_id = e.id
+       JOIN reservations r ON h.reservation_id = r.id
+       WHERE h.user_alias = $1
+         AND h.start_date >= NOW() - INTERVAL '1 year'
+       ORDER BY h.start_date DESC`,
+      [userAlias]
+    );
+    
+    return {
+      statusCode: 200,
+      headers: corsHeaders,
+      body: JSON.stringify({
+        user_alias: userAlias,
+        history: historyResult.rows,
+        period: 'past_1_year'
+      })
+    };
+  } catch (error) {
+    console.error('Error fetching user history:', error);
+    return {
+      statusCode: 500,
+      headers: corsHeaders,
+      body: JSON.stringify({ error: error.message })
+    };
+  }
+}
