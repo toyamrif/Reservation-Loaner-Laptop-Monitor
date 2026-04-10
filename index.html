@@ -900,7 +900,7 @@
                 emailText += '・返却時は必ず返却処理を行ってください\n';
                 emailText += '・機器に問題がある場合は、すぐに受取場所の担当者にご連絡ください\n';
                 emailText += '・予約の変更・キャンセルは利用開始日の前日 午前9時まで可能です\n';
-                emailText += '・それ以降の変更は loaner-laptop-noreply@amazon.com までお問い合わせください\n\n';
+                emailText += '・それ以降の変更はIT窓口までお越しください\n\n';
                 emailText += '■ Amazon Loaner初回ログインについて\n';
                 emailText += 'Amazon Loanerは初回ログイン時は、ログイン前にVPNを接続いただいた上でログインする必要があります。\n';
                 emailText += '方法についてはこちらに記載しております：\n';
@@ -1406,7 +1406,7 @@
                         if (error.error && error.error.includes('Insufficient inventory')) {
                             throw new Error('在庫が不足しています。数量を減らすか、別のサイトをお試しください。');
                         } else if (error.error && error.error.includes('Modification deadline')) {
-                            throw new Error(error.message || '変更期限を過ぎています。loaner-laptop-noreply@amazon.com までお問い合わせください。');
+                            throw new Error(error.message || '変更期限を過ぎています。IT窓口までお越しください。');
                         }
                         throw new Error(error.error || '予約の作成に失敗しました');
                     }
@@ -1473,7 +1473,7 @@
                         }
                         successMsg += '\n✅ 確認メールを ' + formData.alias + '@amazon.co.jp に送信しました。';
                         successMsg += '\n\n⚠️ 予約の変更・キャンセルは利用開始日の前日 午前9時まで可能です。';
-                        successMsg += '\nそれ以降の変更は loaner-laptop-noreply@amazon.com までお問い合わせください。';
+                        successMsg += '\nそれ以降の変更はIT窓口までお越しください。';
 
                         alert(successMsg);
 
