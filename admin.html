@@ -617,8 +617,17 @@
             let html = '';
             
             for (let site in groupedBySite) {
+                const siteEquipment = groupedBySite[site];
+                const availableCount = siteEquipment.filter(eq => eq.status === 'available').length;
+                const inUseCount = siteEquipment.filter(eq => eq.status === 'in_use').length;
+                const maintenanceCount = siteEquipment.filter(eq => eq.status === 'maintenance').length;
+                
                 html += `<div class="site-card">
-                    <div class="site-title">📍 ${site}</div>
+                    <div class="site-title">📍 ${site}
+                        <span style="font-size: 12px; font-weight: normal; margin-left: 15px;">
+                            🟢 ${availableCount} 利用可能 &nbsp; 🔴 ${inUseCount} 使用中 &nbsp; 🟡 ${maintenanceCount} メンテナンス
+                        </span>
+                    </div>
                     <div class="equipment-grid">`;
                 
                 groupedBySite[site].forEach(equipment => {
@@ -639,7 +648,7 @@
                                 <div>モデル: <span id="model-${equipment.code}">${equipment.model}</span></div>
                                 <div style="grid-column: 1 / -1;">S/N: <span id="sn-${equipment.code}">${equipment.serialNumber}</span></div>
                             </div>
-                            ${equipment.currentUser ? `<div class="user-tag">${equipment.currentUser}</div>` : ''}
+                            ${equipment.currentUser ? `<div class="user-tag">👤 ${equipment.currentUser}</div>` : ''}
                             <div style="margin-top: 8px; display: flex; gap: 8px; flex-wrap: wrap;">
                                 <button class="update-btn" style="font-size: 11px; padding: 4px 12px; background: rgba(52, 152, 219, 0.8);" onclick="editEquipmentInfo('${equipment.code}')">📝 編集</button>
                                 ${equipment.status === 'available' ? 
