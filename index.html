@@ -879,10 +879,10 @@
                 if (reservationData.amazonPC > 0) emailText += '・Amazon PC: ' + reservationData.amazonPC + '台\n';
                 if (reservationData.monitors > 0) emailText += '・モニター: ' + reservationData.monitors + '台\n';
                 
-                if (reservationData.assignedEquipment && reservationData.assignedEquipment.length > 0) {
+                if (reservationData.allocatedEquipment && reservationData.allocatedEquipment.length > 0) {
                     emailText += '\n■ 割り当てられた機器\n';
-                    reservationData.assignedEquipment.forEach(code => {
-                        emailText += '・' + code + '\n';
+                    reservationData.allocatedEquipment.forEach(eq => {
+                        emailText += '・' + formatEquipmentDisplayName(eq.equipment_code) + '\n';
                     });
                 }
                 
@@ -1401,6 +1401,11 @@
 
                     if (!reservationResponse.ok) {
                         const error = await reservationResponse.json();
+                        if (error.error && error.error.includes('Insufficient inventory')) {
+                            throw new Error('在庫が不足しています。数量を減らすか、別のサイトをお試しください。');
+                        } else if (error.error && error.error.includes('Modification deadline')) {
+                            throw new Error(error.message || '変更期限を過ぎています。loaner-laptop-noreply@amazon.com までお問い合わせください。');
+                        }
                         throw new Error(error.error || '予約の作成に失敗しました');
                     }
 
@@ -1451,7 +1456,12 @@
                         successMsg += '予約内容:\n';
                         successMsg += '• サイト: ' + formData.pickupSite + '\n';
                         successMsg += '• 期間: ' + formData.startDate + ' ～ ' + formData.endDate + '\n';
-                        successMsg += '• 機器: Non-Amazon PC ' + formData.nonAmazonPC + '台, Amazon PC ' + formData.amazonPC + '台, モニター ' + formData.monitors + '台\n';
+                        successMsg += '• 機器: ';
+                        const items = [];
+                        if (formData.nonAmazonPC > 0) items.push('Non-Amazon PC ' + formData.nonAmazonPC + '台');
+                        if (formData.amazonPC > 0) items.push('Amazon PC ' + formData.amazonPC + '台');
+                        if (formData.monitors > 0) items.push('モニター ' + formData.monitors + '台');
+                        successMsg += items.join(', ') + '\n';
                         if (allocatedEquipment.length > 0) {
                             successMsg += '\n割り当てられた機器:\n';
                             allocatedEquipment.forEach(eq => {
@@ -1460,6 +1470,8 @@
                             });
                         }
                         successMsg += '\n✅ 確認メールを ' + formData.alias + '@amazon.co.jp に送信しました。';
+                        successMsg += '\n\n⚠️ 予約の変更・キャンセルは利用開始日の前日 午前9時まで可能です。';
+                        successMsg += '\nそれ以降の変更は loaner-laptop-noreply@amazon.com までお問い合わせください。';
 
                         alert(successMsg);
 
