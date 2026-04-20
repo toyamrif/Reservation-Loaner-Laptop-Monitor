@@ -67,6 +67,8 @@ exports.handler = async (event) => {
       return await updateReservation(event);
     } else if (path.match(/^\/reservations\/[^\/]+\/cancel$/) && method === 'POST') {
       return await cancelReservation(event);
+    } else if (path === '/reservations/search' && method === 'GET') {
+      return await searchReservations(event);
     } else if (path.match(/^\/equipment\/[^\/]+\/history$/) && method === 'GET') {
       return await getEquipmentHistory(event);
     } else if (path.match(/^\/users\/[^\/]+\/history$/) && method === 'GET') {
@@ -894,4 +896,63 @@ async function getUserHistory(event) {
       body: JSON.stringify({ error: error.message })
     };
   }
+}
+
+
+/**
+ * 予約検索（Alias または 予約コードで検索）
+ */
+async function searchReservations(event) {
+  const { q } = event.queryStringParameters || {};
+  
+  if (!q || q.trim() === '') {
+    return {
+      statusCode: 400,
+      headers: corsHeaders,
+      body: JSON.stringify({ error: 'Search query is required' })
+    };
+  }
+  
+  const searchTerm = q.trim();
+  
+  const result = await pool.query(
+    `SELECT r.*, 
+            r.booking_code,
+            json_agg(
+              json_build_object(
+                'equipment_type', re.equipment_type,
+                'quantity', re.quantity
+              )
+            ) as equipment
+     FROM reservations r
+     LEFT JOIN reservation_equipment re ON r.id = re.reservation_id
+     WHERE r.user_alias ILIKE $1 
+        OR r.booking_code ILIKE $1
+     GROUP BY r.id
+     ORDER BY r.created_at DESC`,
+    ['%' + searchTerm + '%']
+  );
+  
+  // 各予約に割り当てられた機器情報を追加
+  const reservations = [];
+  for (const reservation of result.rows) {
+    const equipmentResult = await pool.query(
+      `SELECT ei.equipment_code, ei.equipment_type
+       FROM equipment_usage_history euh
+       JOIN equipment_items ei ON euh.equipment_id = ei.id
+       WHERE euh.reservation_id = $1`,
+      [reservation.id]
+    );
+    
+    reservations.push({
+      ...reservation,
+      allocated_equipment: equipmentResult.rows
+    });
+  }
+  
+  return {
+    statusCode: 200,
+    headers: corsHeaders,
+    body: JSON.stringify(reservations)
+  };
 }

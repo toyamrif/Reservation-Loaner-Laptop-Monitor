@@ -283,7 +283,7 @@
                 <!-- 検索セクション -->
                 <div style="background: rgba(255, 255, 255, 0.1); border-radius: 15px; padding: 20px; margin-bottom: 20px;">
                     <h4 style="margin-bottom: 15px;">🔍 予約検索</h4>
-                    <input type="text" id="reservationSearchInput" placeholder="予約IDまたはユーザー名で検索..." 
+                    <input type="text" id="reservationSearchInput" placeholder="予約コード（R-XXXXX）またはAliasで検索..." 
                            style="width: 100%; padding: 12px; background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 8px; color: white; font-size: 16px; margin-bottom: 10px;">
                     <button onclick="searchReservationForManagement()" style="padding: 10px 20px; background: rgba(52, 152, 219, 0.8); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 500;">検索</button>
                 </div>
@@ -793,24 +793,34 @@
             const resultContainer = document.getElementById('reservationManagementResult');
             
             if (!searchTerm) {
-                resultContainer.innerHTML = '<div style="color: rgba(255,255,255,0.7); text-align: center; padding: 20px;">予約IDまたはユーザー名を入力してください</div>';
+                resultContainer.innerHTML = '<div style="color: rgba(255,255,255,0.7); text-align: center; padding: 20px;">予約コードまたはAliasを入力してください</div>';
                 return;
             }
             
             try {
-                const reservations = await getReservations();
-                const filtered = reservations.filter(r => 
-                    r.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    r.user_alias.toLowerCase().includes(searchTerm.toLowerCase())
-                );
+                const response = await fetch(`${API_BASE_URL}/reservations/search?q=${encodeURIComponent(searchTerm)}`);
+                if (!response.ok) throw new Error('検索に失敗しました');
+                const results = await response.json();
                 
-                if (filtered.length === 0) {
+                if (results.length === 0) {
                     resultContainer.innerHTML = '<div style="color: rgba(255,255,255,0.7); text-align: center; padding: 20px;">予約が見つかりませんでした</div>';
                     return;
                 }
                 
-                // 予約詳細を表示
-                await renderReservationManagement(filtered[0]);
+                if (results.length === 1) {
+                    await renderReservationManagement(results[0]);
+                } else {
+                    // 複数件の場合はリスト表示
+                    let html = '<div style="margin-bottom: 15px; color: rgba(255,255,255,0.8);">' + results.length + '件の予約が見つかりました</div>';
+                    results.forEach(r => {
+                        const statusLabel = {pending:'未設置', confirmed:'利用中', setup_complete:'利用中', returned:'返却済み', cancelled:'キャンセル'}[r.status] || r.status;
+                        html += '<div style="background: rgba(255,255,255,0.1); padding: 12px; border-radius: 8px; margin-bottom: 8px; cursor: pointer; display: flex; justify-content: space-between; align-items: center;" onclick="renderReservationManagement(' + JSON.stringify(r).replace(/"/g, '&quot;') + ')">';
+                        html += '<div><strong>' + (r.booking_code || r.id.substring(0,8)) + '</strong> - ' + r.user_alias + '</div>';
+                        html += '<div>' + statusLabel + ' | ' + r.pickup_site + ' | ' + new Date(r.start_date).toLocaleDateString('ja-JP') + '</div>';
+                        html += '</div>';
+                    });
+                    resultContainer.innerHTML = html;
+                }
             } catch (error) {
                 console.error('予約検索エラー:', error);
                 resultContainer.innerHTML = '<div style="color: #e74c3c; text-align: center; padding: 20px;">エラーが発生しました: ' + error.message + '</div>';
@@ -879,7 +889,7 @@
                         ${statusBadge}
                     </div>
                     <div style="line-height: 1.8;">
-                        <strong>予約ID:</strong> ${reservation.id}<br>
+                        <strong>予約コード:</strong> ${reservation.booking_code || reservation.id.substring(0,8)}<br>
                         <strong>👤 利用者:</strong> ${reservation.user_alias}<br>
                         <strong>📍 サイト:</strong> ${reservation.pickup_site}<br>
                         <strong>📅 期間:</strong> ${reservation.start_date.split('T')[0]} ～ ${reservation.end_date.split('T')[0]}<br>
