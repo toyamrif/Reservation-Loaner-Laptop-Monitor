@@ -476,12 +476,16 @@ async function createReservation(event) {
       }
     }
     
+    // 予約番号を生成（R-00000形式）
+    const randomNum = String(Math.floor(Math.random() * 100000)).padStart(5, '0');
+    const bookingCode = 'R-' + randomNum;
+    
     // 予約作成
     const reservationResult = await client.query(
-      `INSERT INTO reservations (user_alias, pickup_site, start_date, end_date, status)
-       VALUES ($1, $2, $3, $4, 'pending')
+      `INSERT INTO reservations (user_alias, pickup_site, start_date, end_date, status, booking_code)
+       VALUES ($1, $2, $3, $4, 'pending', $5)
        RETURNING *`,
-      [user_alias, pickup_site, start_date, end_date]
+      [user_alias, pickup_site, start_date, end_date, bookingCode]
     );
     
     const reservation = reservationResult.rows[0];

@@ -1412,7 +1412,7 @@
                     }
 
                     const reservationData = await reservationResponse.json();
-                    const reservationId = reservationData.id;
+                    const reservationId = reservationData.booking_code || reservationData.id;
                     const allocatedEquipment = reservationData.allocated_equipment || [];
                     
                     formData.reservationId = reservationId;
