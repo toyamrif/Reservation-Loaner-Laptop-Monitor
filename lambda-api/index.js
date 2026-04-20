@@ -480,6 +480,9 @@ async function createReservation(event) {
     const randomNum = String(Math.floor(Math.random() * 100000)).padStart(5, '0');
     const bookingCode = 'R-' + randomNum;
     
+    // booking_codeカラムが存在しない場合は追加
+    await client.query('ALTER TABLE reservations ADD COLUMN IF NOT EXISTS booking_code VARCHAR(10)');
+    
     // 予約作成
     const reservationResult = await client.query(
       `INSERT INTO reservations (user_alias, pickup_site, start_date, end_date, status, booking_code)
