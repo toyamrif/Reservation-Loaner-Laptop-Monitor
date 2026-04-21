@@ -15,17 +15,9 @@
         
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
-            background: linear-gradient(135deg, #32CD32, #00CED1);
-            background-size: 400% 400%;
-            animation: gradientShift 15s ease infinite;
+            background: #EAEDED;
             min-height: 100vh;
-            padding: 40px 20px;
-        }
-        
-        @keyframes gradientShift {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
+            padding: 0;
         }
         
         .language-selector {
@@ -37,46 +29,42 @@
         
         .language-selector select {
             padding: 10px 15px;
-            background: rgba(255, 255, 255, 0.2);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            border-radius: 8px;
+            background: #232F3E;
+            border: 1px solid #485769;
+            border-radius: 4px;
             color: #ffffff;
             font-size: 14px;
             font-weight: 500;
             cursor: pointer;
-            font-family: 'Amazon Ember', sans-serif;
             transition: all 0.3s;
         }
         
         .language-selector select:hover {
-            background: rgba(255, 255, 255, 0.3);
+            background: #37475A;
         }
         
         .language-selector select option {
-            background: #1a1a1a;
+            background: #232F3E;
             color: #ffffff;
         }
         
         .container {
             max-width: 700px;
             margin: 0 auto;
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(20px);
-            border-radius: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            padding: 40px;
+            background: #FFFFFF;
+            border-radius: 8px;
+            border: 1px solid #DDD;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            padding: 30px 40px;
         }
         
         h1 {
-            color: #ffffff;
+            color: #232F3E;
             text-align: center;
-            margin-bottom: 40px;
-            font-size: 32px;
+            margin-bottom: 30px;
+            font-size: 28px;
             font-weight: 700;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
-            letter-spacing: 1px;
+            letter-spacing: 0;
         }
         
         .progress-bar {
@@ -93,7 +81,7 @@
             left: 0;
             right: 0;
             height: 2px;
-            background: rgba(255, 255, 255, 0.3);
+            background: #DDD;
             z-index: 0;
         }
         
@@ -108,34 +96,37 @@
             width: 30px;
             height: 30px;
             border-radius: 50%;
-            background: rgba(255, 255, 255, 0.3);
+            background: #DDD;
             margin: 0 auto 8px;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: #ffffff;
+            color: #666;
             font-weight: bold;
             font-size: 14px;
             transition: all 0.3s;
         }
         
         .progress-step.active .progress-step-circle {
-            background: rgba(50, 205, 50, 0.9);
-            box-shadow: 0 0 15px rgba(50, 205, 50, 0.6);
+            background: #FF9900;
+            color: #fff;
+            box-shadow: 0 0 10px rgba(255, 153, 0, 0.4);
         }
         
         .progress-step.completed .progress-step-circle {
-            background: rgba(50, 205, 50, 0.7);
+            background: #067D62;
+            color: #fff;
         }
         
         .progress-step-label {
-            color: rgba(255, 255, 255, 0.7);
+            color: #888;
             font-size: 12px;
             font-weight: 500;
         }
         
         .progress-step.active .progress-step-label {
-            color: #ffffff;
+            color: #232F3E;
+            font-weight: 600;
         }
         
         .error-message {
@@ -199,37 +190,33 @@
         label {
             display: block;
             margin-bottom: 10px;
-            color: #ffffff;
-            font-weight: 500;
-            font-size: 15px;
-            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+            color: #232F3E;
+            font-weight: 600;
+            font-size: 14px;
         }
         
         input[type="text"],
         input[type="date"],
         select {
             width: 100%;
-            padding: 14px;
-            background: rgba(255, 255, 255, 0.15);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            border-radius: 10px;
-            font-size: 15px;
-            color: #ffffff;
-            transition: all 0.3s;
-            font-family: 'Amazon Ember', sans-serif;
+            padding: 10px 12px;
+            background: #FFFFFF;
+            border: 1px solid #888;
+            border-radius: 4px;
+            font-size: 14px;
+            color: #111;
+            transition: all 0.2s;
         }
         
         input::placeholder {
-            color: rgba(255, 255, 255, 0.6);
+            color: #888;
         }
         
         input:focus,
         select:focus {
             outline: none;
-            background: rgba(255, 255, 255, 0.25);
-            border-color: rgba(255, 255, 255, 0.5);
-            box-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+            border-color: #FF9900;
+            box-shadow: 0 0 3px rgba(255, 153, 0, 0.5);
         }
         
         select {
@@ -237,25 +224,23 @@
         }
         
         select option {
-            background: #1a1a1a;
-            color: #ffffff;
+            background: #fff;
+            color: #111;
         }
         
         .equipment-section {
-            background: rgba(255, 255, 255, 0.08);
-            backdrop-filter: blur(15px);
-            padding: 25px;
-            border-radius: 15px;
-            margin-bottom: 25px;
-            border: 1px solid rgba(255, 255, 255, 0.15);
+            background: #F7F8FA;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid #DDD;
         }
         
         .equipment-section h3 {
-            color: #ffffff;
-            margin-bottom: 20px;
-            font-size: 20px;
+            color: #232F3E;
+            margin-bottom: 15px;
+            font-size: 18px;
             font-weight: 600;
-            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
         }
         
         .quantity-row {
@@ -270,8 +255,8 @@
         }
         
         .quantity-label {
-            color: #ffffff;
-            font-size: 15px;
+            color: #232F3E;
+            font-size: 14px;
             font-weight: 500;
         }
         
@@ -284,20 +269,20 @@
         .quantity-control button {
             width: 35px;
             height: 35px;
-            border: none;
-            background: rgba(50, 205, 50, 0.8);
-            color: white;
-            border-radius: 8px;
+            border: 1px solid #888;
+            background: #F7F8FA;
+            color: #232F3E;
+            border-radius: 4px;
             cursor: pointer;
             font-size: 18px;
             font-weight: bold;
-            transition: all 0.3s;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            transition: all 0.2s;
         }
         
         .quantity-control button:hover {
-            background: rgba(50, 205, 50, 1);
-            transform: scale(1.1);
+            background: #FF9900;
+            color: #fff;
+            border-color: #FF9900;
         }
         
         .quantity-control button:active {
@@ -309,7 +294,7 @@
             text-align: center;
             font-weight: bold;
             font-size: 18px;
-            color: #ffffff;
+            color: #232F3E;
         }
         
         .button-group {
@@ -320,37 +305,32 @@
         
         .btn {
             flex: 1;
-            padding: 16px;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            border-radius: 12px;
-            font-size: 17px;
+            padding: 12px;
+            border: none;
+            border-radius: 4px;
+            font-size: 15px;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s;
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            font-family: 'Amazon Ember', sans-serif;
+            transition: all 0.2s;
         }
         
         .btn-next,
         .btn-submit {
-            background: linear-gradient(135deg, rgba(50, 205, 50, 0.9), rgba(0, 206, 209, 0.9));
-            color: white;
+            background: #FF9900;
+            color: #111;
         }
         
         .btn-prev {
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
+            background: #E7E9EC;
+            color: #111;
         }
         
         .btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+            opacity: 0.9;
         }
         
         .btn:active {
-            transform: translateY(0);
+            transform: translateY(1px);
         }
         
         .required {
@@ -359,18 +339,25 @@
         
         .info-text {
             font-size: 12px;
-            color: rgba(255, 255, 255, 0.7);
+            color: #666;
             margin-top: 8px;
             font-style: italic;
         }
         
         input[type="date"]::-webkit-calendar-picker-indicator {
-            filter: invert(1);
             cursor: pointer;
         }
     </style>
 </head>
 <body>
+    <div style="background: #232F3E; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <div style="color: #FF9900; font-size: 20px; font-weight: 700;">🖥️ Loaner機器予約</div>
+        <div style="display: flex; gap: 15px;">
+            <a href="admin.html" style="color: #fff; text-decoration: none; font-size: 14px;">🛠️ 管理画面</a>
+            <a href="return.html" style="color: #fff; text-decoration: none; font-size: 14px;">🔄 返却管理</a>
+        </div>
+    </div>
+    
     <div class="language-selector">
         <select id="languageSelect" onchange="changeLanguage()">
             <option value="ja">日本語</option>
@@ -378,16 +365,7 @@
         </select>
     </div>
     
-    <div style="position: fixed; top: 20px; left: 20px; z-index: 1000; display: flex; flex-direction: column; gap: 10px;">
-        <a href="admin.html" style="padding: 10px 15px; background: rgba(255, 255, 255, 0.2); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 8px; color: #ffffff; text-decoration: none; font-size: 14px; font-weight: 500; transition: all 0.3s;">
-            🛠️ 管理画面
-        </a>
-        <a href="return.html" style="padding: 10px 15px; background: rgba(255, 255, 255, 0.2); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 8px; color: #ffffff; text-decoration: none; font-size: 14px; font-weight: 500; transition: all 0.3s;">
-            🔄 返却管理
-        </a>
-    </div>
-    
-    <div class="container">
+    <div style="padding: 20px;"> class="container">
         <h1 id="pageTitle">🖥️ Loaner機器予約システム</h1>
         
         <div class="progress-bar">
@@ -1568,5 +1546,6 @@
             }
         });
     </script>
+    </div>
 </body>
 </html>
