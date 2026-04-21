@@ -15,24 +15,23 @@
         
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
-            background: linear-gradient(135deg, #2c3e50, #3498db);
+            background: #EAEDED;
             min-height: 100vh;
-            padding: 20px;
+            padding: 0;
         }
         
         .container {
             max-width: 1400px;
             margin: 0 auto;
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(20px);
-            border-radius: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            background: #FFFFFF;
+            border-radius: 8px;
+            border: 1px solid #DDD;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
             padding: 30px;
         }
         
         h1 {
-            color: #ffffff;
+            color: #232F3E;
             text-align: center;
             margin-bottom: 30px;
             font-size: 28px;
@@ -49,10 +48,10 @@
         
         .nav-btn {
             padding: 10px 20px;
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
+            background: #E7E9EC;
+            color: #111;
             border: none;
-            border-radius: 8px;
+            border-radius: 4px;
             cursor: pointer;
             font-weight: 500;
             font-size: 16px;
@@ -62,7 +61,8 @@
         }
         
         .nav-btn:hover, .nav-btn.active {
-            background: rgba(52, 152, 219, 0.8);
+            background: #232F3E;
+            color: #fff;
         }
         
         .section {
@@ -74,11 +74,11 @@
         }
         
         .site-card {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 15px;
+            background: #F7F8FA;
+            border-radius: 8px;
             padding: 20px;
             margin-bottom: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            border: 1px solid #DDD;
         }
         
         .equipment-grid {
@@ -95,7 +95,7 @@
         }
         
         .site-title {
-            color: #ffffff;
+            color: #232F3E;
             font-size: 20px;
             font-weight: 600;
             margin-bottom: 15px;
@@ -107,12 +107,13 @@
             align-items: center;
             margin-bottom: 10px;
             padding: 10px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 8px;
+            background: #FFFFFF;
+            border-radius: 4px;
+            border: 1px solid #EEE;
         }
         
         .equipment-name {
-            color: #ffffff;
+            color: #232F3E;
             font-weight: 500;
         }
         
@@ -125,45 +126,53 @@
         .inventory-input {
             width: 60px;
             padding: 5px;
-            background: rgba(255, 255, 255, 0.2);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            border-radius: 5px;
-            color: white;
+            background: #FFFFFF;
+            border: 1px solid #888;
+            border-radius: 4px;
+            color: #111;
             text-align: center;
+        }
+        
+        .inventory-input:focus {
+            outline: none;
+            border-color: #FF9900;
+            box-shadow: 0 0 3px rgba(255, 153, 0, 0.5);
         }
         
         .update-btn {
             padding: 5px 15px;
-            background: rgba(46, 204, 113, 0.8);
-            color: white;
+            background: #FF9900;
+            color: #111;
             border: none;
-            border-radius: 5px;
+            border-radius: 4px;
             cursor: pointer;
             font-size: 12px;
+            font-weight: 500;
         }
         
         .update-btn:hover {
-            background: rgba(46, 204, 113, 1);
+            opacity: 0.9;
         }
         
         .equipment-card {
-            background: rgba(255, 255, 255, 0.08);
+            background: #FFFFFF;
             border-radius: 8px;
             padding: 12px;
             margin-bottom: 0;
+            border: 1px solid #DDD;
             border-left: 3px solid;
         }
         
         .equipment-card.available {
-            border-left-color: #2ecc71;
+            border-left-color: #067D62;
         }
         
         .equipment-card.in_use {
-            border-left-color: #e74c3c;
+            border-left-color: #CC0C39;
         }
         
         .equipment-card.maintenance {
-            border-left-color: #f39c12;
+            border-left-color: #FF9900;
         }
         
         .equipment-header {
@@ -176,7 +185,7 @@
         .equipment-code {
             font-size: 14px;
             font-weight: 600;
-            color: #ffffff;
+            color: #232F3E;
         }
         
         .status-badge {
@@ -187,22 +196,22 @@
         }
         
         .status-badge.available {
-            background: rgba(46, 204, 113, 0.3);
-            color: #2ecc71;
+            background: #E6F4F0;
+            color: #067D62;
         }
         
         .status-badge.in_use {
-            background: rgba(231, 76, 60, 0.3);
-            color: #e74c3c;
+            background: #FCE8EC;
+            color: #CC0C39;
         }
         
         .status-badge.maintenance {
-            background: rgba(243, 156, 18, 0.3);
-            color: #f39c12;
+            background: #FFF4E5;
+            color: #B8860B;
         }
         
         .equipment-details {
-            color: rgba(255, 255, 255, 0.8);
+            color: #555;
             font-size: 12px;
             line-height: 1.5;
             display: grid;
@@ -213,14 +222,13 @@
         .user-tag {
             display: inline-block;
             padding: 4px 10px;
-            background: linear-gradient(135deg, rgba(52, 152, 219, 0.4), rgba(41, 128, 185, 0.4));
-            border: 1px solid rgba(52, 152, 219, 0.6);
+            background: #E8F0FE;
+            border: 1px solid #C2D7F0;
             border-radius: 15px;
-            color: #ffffff;
+            color: #232F3E;
             font-weight: 600;
             font-size: 11px;
             margin-top: 6px;
-            box-shadow: 0 2px 8px rgba(52, 152, 219, 0.2);
         }
         
         .user-tag::before {
@@ -232,19 +240,28 @@
             display: inline-block;
             margin-top: 20px;
             padding: 10px 20px;
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
+            background: #E7E9EC;
+            color: #111;
             text-decoration: none;
-            border-radius: 8px;
+            border-radius: 4px;
             transition: all 0.3s;
         }
         
         .back-link:hover {
-            background: rgba(255, 255, 255, 0.3);
+            background: #D5D9DB;
         }
     </style>
 </head>
 <body>
+    <div style="background: #232F3E; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 0;">
+        <div style="color: #FF9900; font-size: 20px; font-weight: 700;">🛠️ 管理画面</div>
+        <div style="display: flex; gap: 15px;">
+            <a href="index.html" style="color: #fff; text-decoration: none; font-size: 14px;">🖥️ 予約システム</a>
+            <a href="return.html" style="color: #fff; text-decoration: none; font-size: 14px;">🔄 返却管理</a>
+        </div>
+    </div>
+    
+    <div style="padding: 20px;">
     <div class="container">
         <h1>🛠️ 在庫管理システム - 管理画面 (2列グリッド版)</h1>
         
@@ -262,8 +279,8 @@
         
         <!-- 個別機器管理セクション -->
         <div id="equipment" class="section">
-            <div style="color: white; margin-bottom: 20px;">
-                <h3 style="text-align: center; margin-bottom: 20px;">🔧 個別機器管理</h3>
+            <div style="color: #232F3E; margin-bottom: 20px;">
+                <h3 style="text-align: center; margin-bottom: 20px; color: #232F3E;">🔧 個別機器管理</h3>
                 <div style="display: flex; gap: 10px; margin-bottom: 20px; justify-content: center; flex-wrap: wrap;">
                     <button class="nav-btn active" onclick="filterEquipment('all')">全て</button>
                     <button class="nav-btn" onclick="filterEquipment('available')">利用可能</button>
@@ -277,15 +294,15 @@
         
         <!-- 予約管理セクション -->
         <div id="reservation-management" class="section">
-            <div style="color: white; padding: 20px;">
-                <h3 style="text-align: center; margin-bottom: 20px;">📦 予約管理</h3>
+            <div style="color: #232F3E; padding: 20px;">
+                <h3 style="text-align: center; margin-bottom: 20px; color: #232F3E;">📦 予約管理</h3>
                 
                 <!-- 検索セクション -->
-                <div style="background: rgba(255, 255, 255, 0.1); border-radius: 15px; padding: 20px; margin-bottom: 20px;">
-                    <h4 style="margin-bottom: 15px;">🔍 予約検索</h4>
+                <div style="background: #F7F8FA; border-radius: 8px; padding: 20px; margin-bottom: 20px; border: 1px solid #DDD;">
+                    <h4 style="margin-bottom: 15px; color: #232F3E;">🔍 予約検索</h4>
                     <input type="text" id="reservationSearchInput" placeholder="予約コード（R-XXXXX）またはAliasで検索..." 
-                           style="width: 100%; padding: 12px; background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 8px; color: white; font-size: 16px; margin-bottom: 10px;">
-                    <button onclick="searchReservationForManagement()" style="padding: 10px 20px; background: rgba(52, 152, 219, 0.8); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 500;">検索</button>
+                           style="width: 100%; padding: 12px; background: #FFFFFF; border: 1px solid #888; border-radius: 4px; color: #111; font-size: 16px; margin-bottom: 10px;">
+                    <button onclick="searchReservationForManagement()" style="padding: 10px 20px; background: #FF9900; color: #111; border: none; border-radius: 4px; cursor: pointer; font-weight: 500;">検索</button>
                 </div>
                 
                 <!-- 検索結果表示 -->
@@ -294,6 +311,7 @@
         </div>
         
         <a href="index.html" class="back-link">← 予約システムに戻る</a>
+    </div>
     </div>
     
     <script>
@@ -567,12 +585,12 @@
                         <div class="equipment-row">
                             <span class="equipment-name">${equipmentType}</span>
                             <div class="equipment-controls">
-                                <span style="color: rgba(255,255,255,0.8);">利用可能:</span>
+                                <span style="color: #555;">利用可能:</span>
                                 <input type="number" class="inventory-input" 
                                        value="${equipment.available}" 
                                        min="0" max="${equipment.total}"
                                        onchange="updateInventory('${siteId}', '${equipmentType}', 'available', this.value)">
-                                <span style="color: rgba(255,255,255,0.8);">/ ${equipment.total}台</span>
+                                <span style="color: #555;">/ ${equipment.total}台</span>
                                 <button class="update-btn" onclick="updateTotal('${siteId}', '${equipmentType}')">総数変更</button>
                             </div>
                         </div>
@@ -624,7 +642,7 @@
                 
                 html += `<div class="site-card">
                     <div class="site-title">📍 ${site}
-                        <span style="font-size: 12px; font-weight: normal; margin-left: 15px;">
+                        <span style="font-size: 12px; font-weight: normal; margin-left: 15px; color: #555;">
                             🟢 ${availableCount} 利用可能 &nbsp; 🔴 ${inUseCount} 使用中 &nbsp; 🟡 ${maintenanceCount} メンテナンス
                         </span>
                     </div>
@@ -650,13 +668,13 @@
                             </div>
                             ${equipment.currentUser ? `<div class="user-tag">👤 ${equipment.currentUser}</div>` : ''}
                             <div style="margin-top: 8px; display: flex; gap: 8px; flex-wrap: wrap;">
-                                <button class="update-btn" style="font-size: 11px; padding: 4px 12px; background: rgba(52, 152, 219, 0.8);" onclick="editEquipmentInfo('${equipment.code}')">📝 編集</button>
+                                <button class="update-btn" style="font-size: 11px; padding: 4px 12px; background: #232F3E; color: #fff;" onclick="editEquipmentInfo('${equipment.code}')">📝 編集</button>
                                 ${equipment.status === 'available' ? 
                                     `<button class="update-btn" style="font-size: 11px; padding: 4px 12px;" onclick="setEquipmentStatus('${equipment.code}', 'maintenance')">メンテナンス</button>` : ''}
                                 ${equipment.status === 'maintenance' ? 
                                     `<button class="update-btn" style="font-size: 11px; padding: 4px 12px;" onclick="setEquipmentStatus('${equipment.code}', 'available')">利用可能に戻す</button>` : ''}
                                 ${equipment.status === 'in_use' ? 
-                                    `<button class="update-btn" style="background: rgba(231, 76, 60, 0.8); font-size: 11px; padding: 4px 12px;" onclick="returnEquipment('${equipment.code}')">返却処理</button>` : ''}
+                                    `<button class="update-btn" style="background: #CC0C39; color: #fff; font-size: 11px; padding: 4px 12px;" onclick="returnEquipment('${equipment.code}')">返却処理</button>` : ''}
                             </div>
                         </div>
                     `;
@@ -666,7 +684,7 @@
             }
             
             if (filteredEquipment.length === 0) {
-                html = '<div style="text-align: center; color: rgba(255,255,255,0.6); padding: 40px;">該当する機器がありません</div>';
+                html = '<div style="text-align: center; color: #888; padding: 40px;">該当する機器がありません</div>';
             }
             
             container.innerHTML = html;
@@ -793,7 +811,7 @@
             const resultContainer = document.getElementById('reservationManagementResult');
             
             if (!searchTerm) {
-                resultContainer.innerHTML = '<div style="color: rgba(255,255,255,0.7); text-align: center; padding: 20px;">予約コードまたはAliasを入力してください</div>';
+                resultContainer.innerHTML = '<div style="color: #888; text-align: center; padding: 20px;">予約コードまたはAliasを入力してください</div>';
                 return;
             }
             
@@ -803,7 +821,7 @@
                 const results = await response.json();
                 
                 if (results.length === 0) {
-                    resultContainer.innerHTML = '<div style="color: rgba(255,255,255,0.7); text-align: center; padding: 20px;">予約が見つかりませんでした</div>';
+                    resultContainer.innerHTML = '<div style="color: #888; text-align: center; padding: 20px;">予約が見つかりませんでした</div>';
                     return;
                 }
                 
@@ -811,19 +829,19 @@
                     await renderReservationManagement(results[0]);
                 } else {
                     // 複数件の場合はリスト表示
-                    let html = '<div style="margin-bottom: 15px; color: rgba(255,255,255,0.8);">' + results.length + '件の予約が見つかりました</div>';
+                    let html = '<div style="margin-bottom: 15px; color: #555;">' + results.length + '件の予約が見つかりました</div>';
                     results.forEach(r => {
                         const statusLabel = {pending:'未設置', confirmed:'利用中', setup_complete:'利用中', returned:'返却済み', cancelled:'キャンセル'}[r.status] || r.status;
-                        html += '<div style="background: rgba(255,255,255,0.1); padding: 12px; border-radius: 8px; margin-bottom: 8px; cursor: pointer; display: flex; justify-content: space-between; align-items: center;" onclick="renderReservationManagement(' + JSON.stringify(r).replace(/"/g, '&quot;') + ')">';
-                        html += '<div><strong>' + (r.booking_code || r.id.substring(0,8)) + '</strong> - ' + r.user_alias + '</div>';
-                        html += '<div>' + statusLabel + ' | ' + r.pickup_site + ' | ' + new Date(r.start_date).toLocaleDateString('ja-JP') + '</div>';
+                        html += '<div style="background: #F7F8FA; padding: 12px; border-radius: 4px; margin-bottom: 8px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; border: 1px solid #DDD;" onclick="renderReservationManagement(' + JSON.stringify(r).replace(/"/g, '&quot;') + ')">';
+                        html += '<div style="color: #232F3E;"><strong>' + (r.booking_code || r.id.substring(0,8)) + '</strong> - ' + r.user_alias + '</div>';
+                        html += '<div style="color: #555;">' + statusLabel + ' | ' + r.pickup_site + ' | ' + new Date(r.start_date).toLocaleDateString('ja-JP') + '</div>';
                         html += '</div>';
                     });
                     resultContainer.innerHTML = html;
                 }
             } catch (error) {
                 console.error('予約検索エラー:', error);
-                resultContainer.innerHTML = '<div style="color: #e74c3c; text-align: center; padding: 20px;">エラーが発生しました: ' + error.message + '</div>';
+                resultContainer.innerHTML = '<div style="color: #CC0C39; text-align: center; padding: 20px;">エラーが発生しました: ' + error.message + '</div>';
             }
         }
         
@@ -859,36 +877,36 @@
             let actionButtons = '';
             
             if (reservation.status === 'pending') {
-                statusBadge = '<span style="background: rgba(241, 196, 15, 0.8); padding: 5px 15px; border-radius: 5px;">未設置</span>';
+                statusBadge = '<span style="background: #FFF4E5; color: #B8860B; padding: 5px 15px; border-radius: 5px;">未設置</span>';
                 actionButtons = `
                     <button onclick="markAsSetupComplete('${reservation.id}')" 
-                            style="padding: 10px 20px; background: rgba(46, 204, 113, 0.8); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 500; margin-right: 10px;">
+                            style="padding: 10px 20px; background: #067D62; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-weight: 500; margin-right: 10px;">
                         ✅ 設置完了
                     </button>
                 `;
             } else if (reservation.status === 'confirmed' || reservation.status === 'setup_complete') {
-                statusBadge = '<span style="background: rgba(46, 204, 113, 0.8); padding: 5px 15px; border-radius: 5px;">利用中</span>';
+                statusBadge = '<span style="background: #E6F4F0; color: #067D62; padding: 5px 15px; border-radius: 5px;">利用中</span>';
                 actionButtons = `
                     <button onclick="markAsReturned('${reservation.id}')" 
-                            style="padding: 10px 20px; background: rgba(231, 76, 60, 0.8); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 500; margin-right: 10px;">
+                            style="padding: 10px 20px; background: #CC0C39; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-weight: 500; margin-right: 10px;">
                         🔄 返却完了
                     </button>
                 `;
             } else if (reservation.status === 'returned') {
-                statusBadge = '<span style="background: rgba(149, 165, 166, 0.8); padding: 5px 15px; border-radius: 5px;">返却済み</span>';
-                actionButtons = '<div style="color: rgba(255,255,255,0.7);">この予約は既に返却済みです</div>';
+                statusBadge = '<span style="background: #E7E9EC; color: #555; padding: 5px 15px; border-radius: 5px;">返却済み</span>';
+                actionButtons = '<div style="color: #888;">この予約は既に返却済みです</div>';
             } else if (reservation.status === 'cancelled') {
-                statusBadge = '<span style="background: rgba(231, 76, 60, 0.8); padding: 5px 15px; border-radius: 5px;">キャンセル済み</span>';
-                actionButtons = '<div style="color: rgba(255,255,255,0.7);">この予約はキャンセルされています</div>';
+                statusBadge = '<span style="background: #FCE8EC; color: #CC0C39; padding: 5px 15px; border-radius: 5px;">キャンセル済み</span>';
+                actionButtons = '<div style="color: #888;">この予約はキャンセルされています</div>';
             }
             
             const html = `
-                <div style="background: rgba(255, 255, 255, 0.1); border-radius: 15px; padding: 20px; margin-bottom: 20px;">
+                <div style="background: #F7F8FA; border-radius: 8px; padding: 20px; margin-bottom: 20px; border: 1px solid #DDD;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                        <h4>予約詳細</h4>
+                        <h4 style="color: #232F3E;">予約詳細</h4>
                         ${statusBadge}
                     </div>
-                    <div style="line-height: 1.8;">
+                    <div style="line-height: 1.8; color: #232F3E;">
                         <strong>予約コード:</strong> ${reservation.booking_code || reservation.id.substring(0,8)}<br>
                         <strong>👤 利用者:</strong> ${reservation.user_alias}<br>
                         <strong>📍 サイト:</strong> ${reservation.pickup_site}<br>
@@ -896,7 +914,7 @@
                         <strong>📝 予約日:</strong> ${new Date(reservation.created_at).toLocaleDateString('ja-JP')}
                         ${equipmentHtml}
                     </div>
-                    <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.2);">
+                    <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #DDD;">
                         ${actionButtons}
                     </div>
                 </div>
