@@ -31,6 +31,11 @@ const corsHeaders = {
 exports.handler = async (event) => {
   console.log('Event:', JSON.stringify(event, null, 2));
 
+  // EventBridgeからの定期実行（クリーンアップ）
+  if (event.source === 'aws.events' || event.detail_type === 'Scheduled Event' || event['detail-type'] === 'Scheduled Event') {
+    return await cleanupOldReservations(event);
+  }
+
   // OPTIONSリクエスト（CORS preflight）
   if (event.httpMethod === 'OPTIONS') {
     return {
@@ -69,6 +74,8 @@ exports.handler = async (event) => {
       return await cancelReservation(event);
     } else if (path === '/reservations/search' && method === 'GET') {
       return await searchReservations(event);
+    } else if (path === '/reservations/cleanup' && method === 'POST') {
+      return await cleanupOldReservations(event);
     } else if (path.match(/^\/equipment\/[^\/]+\/history$/) && method === 'GET') {
       return await getEquipmentHistory(event);
     } else if (path.match(/^\/users\/[^\/]+\/history$/) && method === 'GET') {
@@ -987,4 +994,57 @@ async function searchReservations(event) {
     headers: corsHeaders,
     body: JSON.stringify(reservations)
   };
+}
+
+
+/**
+ * 30日以上前のキャンセル・返却済み予約を自動削除
+ */
+async function cleanupOldReservations(event) {
+  const client = await pool.connect();
+  
+  try {
+    await client.query('BEGIN');
+    
+    // 30日以上前にキャンセルまたは返却された予約を取得
+    const oldReservations = await client.query(
+      `SELECT id FROM reservations 
+       WHERE status IN ('cancelled', 'returned') 
+         AND updated_at < NOW() - INTERVAL '30 days'`
+    );
+    
+    const deletedIds = oldReservations.rows.map(r => r.id);
+    
+    if (deletedIds.length > 0) {
+      // 関連データを削除
+      await client.query(
+        `DELETE FROM equipment_usage_history WHERE reservation_id = ANY($1)`,
+        [deletedIds]
+      );
+      await client.query(
+        `DELETE FROM reservation_equipment WHERE reservation_id = ANY($1)`,
+        [deletedIds]
+      );
+      await client.query(
+        `DELETE FROM reservations WHERE id = ANY($1)`,
+        [deletedIds]
+      );
+    }
+    
+    await client.query('COMMIT');
+    
+    return {
+      statusCode: 200,
+      headers: corsHeaders,
+      body: JSON.stringify({
+        message: 'Cleanup completed',
+        deleted_count: deletedIds.length
+      })
+    };
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
 }
