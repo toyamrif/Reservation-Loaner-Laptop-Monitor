@@ -302,6 +302,7 @@ async function resetDatabase(event) {
     
     // equipment_codeのユニーク制約を変更（site + equipment_codeの組み合わせでユニーク）
     await client.query('ALTER TABLE equipment_items DROP CONSTRAINT IF EXISTS equipment_items_equipment_code_key');
+    await client.query('ALTER TABLE equipment_items DROP CONSTRAINT IF EXISTS equipment_items_site_code_unique');
     await client.query('ALTER TABLE equipment_items ADD CONSTRAINT equipment_items_site_code_unique UNIQUE (site, equipment_code)');
     
     // 在庫データ投入
