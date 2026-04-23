@@ -79,14 +79,15 @@
         /* Two-column layout */
         .two-column-layout {
             display: flex;
-            max-width: 1200px;
+            max-width: 100%;
             margin: 0 auto;
             gap: 0;
             min-height: calc(100vh - 50px);
         }
         
         .left-panel {
-            width: 38%;
+            width: 320px;
+            min-width: 320px;
             background: #232F3E;
             color: white;
             padding: 40px 30px;
@@ -101,17 +102,22 @@
         }
         
         .right-panel {
-            width: 62%;
-            padding: 30px 40px;
+            flex: 1;
+            padding: 40px 60px;
             background: #EAEDED;
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
         }
         
         .container {
+            width: 100%;
+            max-width: 700px;
             background: #FFFFFF;
             border-radius: 16px;
             border: 1px solid #DDD;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-            padding: 35px 40px;
+            padding: 40px 50px;
         }
         
         /* Vertical progress bar */
@@ -243,12 +249,11 @@
         input[type="date"],
         select {
             width: 100%;
-            max-width: 300px;
-            padding: 10px 14px;
+            padding: 12px 14px;
             background: #FFFFFF;
             border: 1px solid #CCC;
             border-radius: 10px;
-            font-size: 14px;
+            font-size: 15px;
             color: #111;
             transition: all 0.2s;
         }
@@ -346,7 +351,7 @@
             display: flex;
             gap: 15px;
             margin-top: 30px;
-            max-width: 75%;
+            max-width: 85%;
             margin-left: auto;
             margin-right: auto;
         }
@@ -408,6 +413,22 @@
             .two-column-layout {
                 flex-direction: column;
             }
+            .left-panel {
+                width: 100%;
+                min-width: auto;
+                min-height: auto;
+                max-height: none;
+                position: relative;
+                top: 0;
+                padding: 25px 20px;
+            }
+            .right-panel {
+                padding: 20px;
+            }
+            .container {
+                padding: 25px 20px;
+            }
+        }
             
             .left-panel {
                 width: 100%;
