@@ -408,6 +408,12 @@
                     </div>
                 </div>
                 
+                <!-- Notes (Optional) -->
+                <div class="form-group">
+                    <label for="notes" data-lang-ja="備考（任意）" data-lang-en="Notes (Optional)">備考（任意）</label>
+                    <textarea id="notes" name="notes" rows="3" placeholder="特記事項があればご記入ください" style="width: 100%; padding: 12px 14px; background: #FFFFFF; border: 1px solid #CCC; border-radius: 10px; font-size: 15px; color: #111; resize: vertical; font-family: inherit;"></textarea>
+                </div>
+                
                 <!-- Submit Button -->
                 <button type="submit" class="btn-submit" data-lang-ja="予約する" data-lang-en="Submit">予約する</button>
             </form>
@@ -787,6 +793,11 @@
                     reservationData.allocatedEquipment.forEach(eq => {
                         emailText += '・' + formatEquipmentDisplayName(eq.equipment_code) + '\n';
                     });
+                }
+                
+                if (reservationData.notes) {
+                    emailText += '\n■ 備考\n';
+                    emailText += reservationData.notes + '\n';
                 }
                 
                 emailText += '\n■ 受取場所詳細\n';
@@ -1208,7 +1219,8 @@
                     monitors: monitorCount,
                     startDate: startDateInput.value,
                     endDate: endDateInput.value,
-                    rentalDays: rentalDays
+                    rentalDays: rentalDays,
+                    notes: document.getElementById('notes').value.trim()
                 };
 
                 try {
