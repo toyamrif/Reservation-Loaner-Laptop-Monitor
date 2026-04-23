@@ -300,11 +300,17 @@ async function resetDatabase(event) {
     await client.query('DELETE FROM inventory');
     await client.query('DELETE FROM site_managers');
     
-    // equipment_codeのユニーク制約を整理
-    await client.query('ALTER TABLE equipment_items DROP CONSTRAINT IF EXISTS equipment_items_equipment_code_key');
-    await client.query('ALTER TABLE equipment_items DROP CONSTRAINT IF EXISTS equipment_items_site_code_unique');
-    await client.query('DROP INDEX IF EXISTS equipment_items_site_code_unique');
-    await client.query('ALTER TABLE equipment_items ADD CONSTRAINT equipment_items_site_code_unique UNIQUE (site, equipment_code)');
+    // equipment_codeのユニーク制約を整理（既に正しい状態ならスキップ）
+    try {
+      await client.query('ALTER TABLE equipment_items DROP CONSTRAINT IF EXISTS equipment_items_equipment_code_key');
+    } catch(e) { /* ignore */ }
+    // 制約が既に存在する場合はそのまま使う
+    const constraintCheck = await client.query(
+      `SELECT 1 FROM pg_constraint WHERE conname = 'equipment_items_site_code_unique'`
+    );
+    if (constraintCheck.rows.length === 0) {
+      await client.query('ALTER TABLE equipment_items ADD CONSTRAINT equipment_items_site_code_unique UNIQUE (site, equipment_code)');
+    }
     
     // 在庫データ投入
     await client.query(`
