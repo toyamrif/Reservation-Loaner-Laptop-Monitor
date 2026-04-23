@@ -398,7 +398,7 @@
                 html += `
                     <div class="reservation-card">
                         <div class="reservation-header">
-                            <div class="reservation-id">${reservation.id}</div>
+                            <div class="reservation-id">${reservation.booking_code || reservation.id.substring(0,8)}</div>
                             <div class="status-badge ${reservation.status === 'returned' ? 'status-returned' : 'status-active'}">
                                 ${reservation.status === 'returned' ? '返却済み' : 
                                   reservation.status === 'cancelled' ? 'キャンセル済み' : '利用中'}
