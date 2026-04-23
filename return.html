@@ -281,8 +281,8 @@
             const reservations = await getReservations();
             const reservation = reservations.find(r => r.id === reservationId);
             
-            if (!reservation || reservation.status === 'returned') {
-                alert('予約が見つからないか、既に返却済みです。');
+            if (!reservation || reservation.status === 'returned' || reservation.status === 'cancelled') {
+                alert('予約が見つからないか、既に返却済み/キャンセル済みです。');
                 return;
             }
             
@@ -413,8 +413,10 @@
                             ${returnedDate ? `<br><strong>🔄 返却日:</strong> ${returnedDate}` : ''}
                             ${equipmentHtml}
                         </div>
-                        ${reservation.status === 'pending' || reservation.status === 'confirmed' ? 
+                        ${reservation.status === 'pending' || reservation.status === 'confirmed' || reservation.status === 'setup_complete' ? 
                             `<button class="return-btn" onclick="returnEquipment('${reservation.id}')">🔄 返却処理</button>` :
+                            reservation.status === 'cancelled' ?
+                            `<button class="return-btn" disabled>キャンセル済み</button>` :
                             `<button class="return-btn" disabled>返却済み</button>`
                         }
                     </div>
