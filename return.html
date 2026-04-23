@@ -279,7 +279,7 @@
         
         async function returnEquipment(reservationId) {
             const reservations = await getReservations();
-            const reservation = reservations.find(r => r.reservationId === reservationId);
+            const reservation = reservations.find(r => r.id === reservationId);
             
             if (!reservation || reservation.status === 'returned') {
                 alert('予約が見つからないか、既に返却済みです。');
@@ -287,30 +287,37 @@
             }
             
             // 確認ダイアログ
+            const equipmentCounts = { amazon_pc: 0, non_amazon_pc: 0, monitor: 0 };
+            if (reservation.equipment && Array.isArray(reservation.equipment)) {
+                reservation.equipment.forEach(eq => {
+                    if (eq.equipment_type) {
+                        equipmentCounts[eq.equipment_type] = eq.quantity || 0;
+                    }
+                });
+            }
+            
             const confirmMsg = `以下の機器を返却しますか？\n\n` +
-                `予約ID: ${reservation.reservationId}\n` +
-                `サイト: ${reservation.pickupSite}\n` +
-                `Non-Amazon PC: ${reservation.nonAmazonPC}台\n` +
-                `Amazon PC: ${reservation.amazonPC}台\n` +
-                `モニター: ${reservation.monitors}台`;
+                `予約ID: ${reservation.booking_code || reservation.id.substring(0,8)}\n` +
+                `サイト: ${reservation.pickup_site}\n` +
+                `Non-Amazon PC: ${equipmentCounts.non_amazon_pc}台\n` +
+                `Amazon PC: ${equipmentCounts.amazon_pc}台\n` +
+                `モニター: ${equipmentCounts.monitor}台`;
             
             if (!confirm(confirmMsg)) {
                 return;
             }
             
             try {
-                // 予約ステータスを更新
-                await updateReservationStatus(reservationId, 'returned');
+                // キャンセルAPIで返却処理（機器解放と在庫復旧を含む）
+                const response = await fetch(`${API_BASE_URL}/reservations/${reservationId}/cancel`, {
+                    method: 'POST'
+                });
                 
-                // 機器のステータスを更新（available に戻す）
-                if (reservation.assignedEquipment && reservation.assignedEquipment.length > 0) {
-                    for (const equipmentCode of reservation.assignedEquipment) {
-                        await updateEquipmentStatus(equipmentCode, 'available', null);
-                    }
+                if (!response.ok) {
+                    throw new Error('返却処理に失敗しました');
                 }
                 
-                // 返却完了メール通知を表示
-                showReturnEmailNotification(reservation);
+                alert('返却処理が完了しました！');
                 
                 // 表示を更新
                 showAllReservations();
