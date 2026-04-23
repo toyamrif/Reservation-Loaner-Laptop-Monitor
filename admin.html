@@ -953,7 +953,7 @@
             }
             
             try {
-                const response = await fetch(`${API_BASE_URL}/reservations/${reservationId}/cancel`, {
+                const response = await fetch(`${API_BASE_URL}/reservations/${reservationId}/return`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' }
                 });

@@ -72,6 +72,8 @@ exports.handler = async (event) => {
       return await updateReservation(event);
     } else if (path.match(/^\/reservations\/[^\/]+\/cancel$/) && method === 'POST') {
       return await cancelReservation(event);
+    } else if (path.match(/^\/reservations\/[^\/]+\/return$/) && method === 'POST') {
+      return await returnReservation(event);
     } else if (path === '/reservations/search' && method === 'GET') {
       return await searchReservations(event);
     } else if (path === '/reservations/cleanup' && method === 'POST') {
@@ -1039,6 +1041,98 @@ async function cleanupOldReservations(event) {
       body: JSON.stringify({
         message: 'Cleanup completed',
         deleted_count: deletedIds.length
+      })
+    };
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+
+/**
+ * 予約返却処理
+ */
+async function returnReservation(event) {
+  const reservationId = event.path.split('/')[2];
+  
+  const client = await pool.connect();
+  
+  try {
+    await client.query('BEGIN');
+    
+    // 予約情報取得
+    const reservationResult = await client.query(
+      `SELECT * FROM reservations WHERE id = $1 AND status NOT IN ('cancelled', 'returned')`,
+      [reservationId]
+    );
+    
+    if (reservationResult.rows.length === 0) {
+      return {
+        statusCode: 404,
+        headers: corsHeaders,
+        body: JSON.stringify({ error: 'Reservation not found, already cancelled, or already returned' })
+      };
+    }
+    
+    const reservation = reservationResult.rows[0];
+    
+    // 予約ステータスを「返却済み」に更新
+    await client.query(
+      `UPDATE reservations 
+       SET status = 'returned', updated_at = NOW()
+       WHERE id = $1`,
+      [reservationId]
+    );
+    
+    // 機器割り当てを解除
+    await client.query(
+      `UPDATE equipment_items 
+       SET status = 'available', 
+           current_user_alias = NULL,
+           updated_at = NOW()
+       WHERE id IN (
+         SELECT equipment_id 
+         FROM equipment_usage_history 
+         WHERE reservation_id = $1 AND end_date IS NULL
+       )`,
+      [reservationId]
+    );
+    
+    // 使用履歴を終了
+    await client.query(
+      `UPDATE equipment_usage_history 
+       SET end_date = NOW()
+       WHERE reservation_id = $1 AND end_date IS NULL`,
+      [reservationId]
+    );
+    
+    // 在庫テーブルの available_quantity を復旧
+    const reservationEquipment = await client.query(
+      `SELECT equipment_type, quantity FROM reservation_equipment WHERE reservation_id = $1`,
+      [reservationId]
+    );
+    for (const eq of reservationEquipment.rows) {
+      await client.query(
+        `UPDATE inventory 
+         SET available_quantity = LEAST(available_quantity + $1, total_quantity),
+             updated_at = NOW()
+         WHERE site = $2 AND equipment_type = $3`,
+        [eq.quantity, reservation.pickup_site, eq.equipment_type]
+      );
+    }
+    
+    await client.query('COMMIT');
+    
+    return {
+      statusCode: 200,
+      headers: corsHeaders,
+      body: JSON.stringify({
+        id: reservationId,
+        status: 'returned',
+        message: 'Return completed successfully'
       })
     };
   } catch (error) {
