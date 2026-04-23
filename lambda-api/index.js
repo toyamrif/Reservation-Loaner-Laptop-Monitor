@@ -543,6 +543,15 @@ async function createReservation(event) {
           equipment_code: item.equipment_code
         });
       }
+      
+      // 在庫テーブルの available_quantity を減算
+      await client.query(
+        `UPDATE inventory 
+         SET available_quantity = available_quantity - $1,
+             updated_at = NOW()
+         WHERE site = $2 AND equipment_type = $3`,
+        [eq.quantity, pickup_site, equipmentType]
+      );
     }
     
     await client.query('COMMIT');
@@ -749,6 +758,21 @@ async function cancelReservation(event) {
        WHERE reservation_id = $1 AND end_date IS NULL`,
       [reservationId]
     );
+    
+    // 在庫テーブルの available_quantity を復旧
+    const reservationEquipment = await client.query(
+      `SELECT equipment_type, quantity FROM reservation_equipment WHERE reservation_id = $1`,
+      [reservationId]
+    );
+    for (const eq of reservationEquipment.rows) {
+      await client.query(
+        `UPDATE inventory 
+         SET available_quantity = LEAST(available_quantity + $1, total_quantity),
+             updated_at = NOW()
+         WHERE site = $2 AND equipment_type = $3`,
+        [eq.quantity, reservationResult.rows[0].pickup_site, eq.equipment_type]
+      );
+    }
     
     await client.query('COMMIT');
     
