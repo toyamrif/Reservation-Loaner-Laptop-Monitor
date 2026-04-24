@@ -95,7 +95,7 @@ exports.handler = async (event) => {
           type: 'actions',
           elements: [{
             type: 'button',
-            text: { type: 'plain_text', text: '✅ 準備完了: ' + r.user_alias, emoji: true },
+            text: { type: 'plain_text', text: '✅ 準備完了', emoji: true },
             value: r.id,
             action_id: 'setup_complete_' + r.id,
             style: 'primary'

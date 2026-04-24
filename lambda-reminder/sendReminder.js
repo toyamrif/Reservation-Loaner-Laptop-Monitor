@@ -59,7 +59,6 @@ async function getTomorrowReservations() {
       r.start_date,
       r.end_date,
       r.status,
-      r.notes,
       json_agg(
         json_build_object(
           'equipment_type', re.equipment_type,
@@ -115,12 +114,5 @@ exports.handler = async (event) => {
   } catch (error) {
     console.error('Error in Lambda A:', error);
     throw error; // Step Functionsがエラーをキャッチ
-  } finally {
-    // コネクションプールを終了
-    try {
-      await pool.end();
-    } catch (e) {
-      // ignore
-    }
   }
 };
