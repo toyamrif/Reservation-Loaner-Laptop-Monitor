@@ -80,6 +80,8 @@ exports.handler = async (event) => {
       return await cleanupOldReservations(event);
     } else if (path === '/slack/interactions' && method === 'POST') {
       return await handleSlackInteraction(event);
+    } else if (path === '/slack/send-reminder' && method === 'POST') {
+      return await sendSlackReminder(event);
     } else if (path.match(/^\/equipment\/[^\/]+\/history$/) && method === 'GET') {
       return await getEquipmentHistory(event);
     } else if (path.match(/^\/users\/[^\/]+\/history$/) && method === 'GET') {
@@ -1316,4 +1318,141 @@ async function sendSetupCompleteEmail(to, subject, message) {
     req.write(postData);
     req.end();
   });
+}
+
+
+/**
+ * Slackリマインダー送信（API Gateway経由で呼ばれる）
+ */
+async function sendSlackReminder(event) {
+  const https = require('https');
+  const { SecretsManagerClient, GetSecretValueCommand } = require('@aws-sdk/client-secrets-manager');
+  
+  try {
+    // Slack Bot Tokenを取得
+    const secretsClient = new SecretsManagerClient({ region: 'ap-northeast-1' });
+    const secretData = await secretsClient.send(new GetSecretValueCommand({ SecretId: 'slack/loaner-bot-token' }));
+    const botToken = JSON.parse(secretData.SecretString).bot_token;
+    
+    // 次の営業日の予約を取得
+    const result = await pool.query(`
+      SELECT r.id, r.user_alias, r.pickup_site, r.start_date, r.end_date, r.status, r.booking_code,
+             json_agg(json_build_object(
+               'equipment_type', re.equipment_type,
+               'quantity', re.quantity
+             )) as equipment
+      FROM reservations r
+      LEFT JOIN reservation_equipment re ON r.id = re.reservation_id
+      WHERE r.start_date = CASE 
+          WHEN EXTRACT(DOW FROM CURRENT_DATE) = 5 THEN CURRENT_DATE + INTERVAL '3 days'
+          ELSE CURRENT_DATE + INTERVAL '1 day'
+        END
+        AND r.status NOT IN ('cancelled', 'returned', 'setup_complete')
+      GROUP BY r.id
+      ORDER BY r.pickup_site, r.user_alias
+    `);
+    
+    const reservations = result.rows;
+    
+    if (reservations.length === 0) {
+      return {
+        statusCode: 200,
+        headers: corsHeaders,
+        body: JSON.stringify({ message: 'No reservations for next business day', count: 0 })
+      };
+    }
+    
+    // サイトごとにグループ化
+    const bySite = {};
+    for (const r of reservations) {
+      if (!bySite[r.pickup_site]) bySite[r.pickup_site] = [];
+      bySite[r.pickup_site].push(r);
+    }
+    
+    const results = [];
+    
+    for (const [site, siteReservations] of Object.entries(bySite)) {
+      // Slackメッセージを構築
+      const blocks = [];
+      blocks.push({
+        type: 'header',
+        text: { type: 'plain_text', text: '📋 予約リマインダー - ' + site, emoji: true }
+      });
+      blocks.push({
+        type: 'section',
+        text: { type: 'mrkdwn', text: '*' + site + '* で *' + siteReservations.length + '件* の予約があります。機器の準備をお願いします。' }
+      });
+      blocks.push({ type: 'divider' });
+      
+      for (const r of siteReservations) {
+        const equipList = r.equipment
+          .map(eq => '• ' + ({'amazon_pc':'Amazon PC','non_amazon_pc':'Non-Amazon PC','monitor':'モニター'}[eq.equipment_type] || eq.equipment_type) + ': ' + eq.quantity + '台')
+          .join('\n');
+        
+        blocks.push({
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text: '*予約:* ' + (r.booking_code || r.id.substring(0,8)) + '\n*利用者:* ' + r.user_alias + '\n*期間:* ' + r.start_date.toISOString().split('T')[0] + ' ～ ' + r.end_date.toISOString().split('T')[0] + '\n*機器:*\n' + equipList
+          }
+        });
+        blocks.push({
+          type: 'actions',
+          elements: [{
+            type: 'button',
+            text: { type: 'plain_text', text: '✅ 準備完了: ' + r.user_alias, emoji: true },
+            value: r.id,
+            action_id: 'setup_complete_' + r.id,
+            style: 'primary'
+          }]
+        });
+        blocks.push({ type: 'divider' });
+      }
+      
+      // Slack送信
+      const postData = JSON.stringify({
+        channel: 'it-loaner-reminder',
+        text: '📋 予約リマインダー - ' + site + ' (' + siteReservations.length + '件)',
+        blocks: blocks
+      });
+      
+      await new Promise((resolve, reject) => {
+        const req = https.request({
+          hostname: 'slack.com',
+          path: '/api/chat.postMessage',
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json; charset=utf-8',
+            'Authorization': 'Bearer ' + botToken
+          }
+        }, (res) => {
+          let data = '';
+          res.on('data', chunk => data += chunk);
+          res.on('end', () => {
+            const response = JSON.parse(data);
+            if (response.ok) resolve(response);
+            else reject(new Error('Slack error: ' + response.error));
+          });
+        });
+        req.on('error', reject);
+        req.write(postData);
+        req.end();
+      });
+      
+      results.push({ site, count: siteReservations.length });
+    }
+    
+    return {
+      statusCode: 200,
+      headers: corsHeaders,
+      body: JSON.stringify({ message: 'Reminders sent', results })
+    };
+  } catch (error) {
+    console.error('Slack reminder error:', error);
+    return {
+      statusCode: 500,
+      headers: corsHeaders,
+      body: JSON.stringify({ error: error.message })
+    };
+  }
 }
