@@ -78,6 +78,8 @@ exports.handler = async (event) => {
       return await searchReservations(event);
     } else if (path === '/reservations/cleanup' && method === 'POST') {
       return await cleanupOldReservations(event);
+    } else if (path === '/slack/interactions' && method === 'POST') {
+      return await handleSlackInteraction(event);
     } else if (path.match(/^\/equipment\/[^\/]+\/history$/) && method === 'GET') {
       return await getEquipmentHistory(event);
     } else if (path.match(/^\/users\/[^\/]+\/history$/) && method === 'GET') {
@@ -1141,4 +1143,177 @@ async function returnReservation(event) {
   } finally {
     client.release();
   }
+}
+
+
+/**
+ * Slack Interactivity ハンドラー（ボタン押下処理）
+ */
+async function handleSlackInteraction(event) {
+  // Slackはpayloadをform-urlencodedで送る
+  let payload;
+  try {
+    const body = event.body;
+    const decoded = decodeURIComponent(body.replace('payload=', ''));
+    payload = JSON.parse(decoded);
+  } catch (e) {
+    console.error('Payload parse error:', e);
+    return { statusCode: 200, headers: corsHeaders, body: '' };
+  }
+  
+  console.log('Slack interaction:', JSON.stringify(payload, null, 2));
+  
+  if (payload.type !== 'block_actions') {
+    return { statusCode: 200, headers: corsHeaders, body: '' };
+  }
+  
+  const action = payload.actions[0];
+  const actionId = action.action_id;
+  
+  // 設置完了ボタン
+  if (actionId.startsWith('setup_complete_')) {
+    const reservationId = action.value;
+    const slackUser = payload.user.name || payload.user.username;
+    
+    const client = await pool.connect();
+    
+    try {
+      await client.query('BEGIN');
+      
+      // 予約情報取得
+      const reservationResult = await client.query(
+        `SELECT * FROM reservations WHERE id = $1`,
+        [reservationId]
+      );
+      
+      if (reservationResult.rows.length === 0) {
+        return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ text: '予約が見つかりません' }) };
+      }
+      
+      const reservation = reservationResult.rows[0];
+      
+      // ステータスを setup_complete に更新
+      await client.query(
+        `UPDATE reservations SET status = 'setup_complete', updated_at = NOW() WHERE id = $1`,
+        [reservationId]
+      );
+      
+      await client.query('COMMIT');
+      
+      // 割り当て機器を取得
+      const equipmentResult = await client.query(
+        `SELECT ei.equipment_code, ei.equipment_type
+         FROM equipment_usage_history euh
+         JOIN equipment_items ei ON euh.equipment_id = ei.id
+         WHERE euh.reservation_id = $1`,
+        [reservationId]
+      );
+      
+      const allocatedEquipment = equipmentResult.rows;
+      
+      // ユーザーに準備完了メールを送信
+      const emailContent = buildSetupCompleteEmail(reservation, allocatedEquipment);
+      try {
+        await sendSetupCompleteEmail(
+          reservation.user_alias + '@amazon.co.jp',
+          '【Loaner機器予約システム】機器の準備が完了しました - ' + (reservation.booking_code || reservationId.substring(0,8)),
+          emailContent
+        );
+      } catch (emailError) {
+        console.error('Email send error:', emailError);
+      }
+      
+      // Slackメッセージを更新（ボタンを「完了済み」に変更）
+      const responseUrl = payload.response_url;
+      if (responseUrl) {
+        const https = require('https');
+        const updateData = JSON.stringify({
+          replace_original: false,
+          text: `✅ *設置完了* - 予約 ${reservation.booking_code || reservationId.substring(0,8)} (${reservation.user_alias}) の準備が完了しました。（by ${slackUser}）\n📧 ${reservation.user_alias}@amazon.co.jp にメール通知を送信しました。`
+        });
+        
+        await new Promise((resolve, reject) => {
+          const url = new URL(responseUrl);
+          const req = https.request({
+            hostname: url.hostname,
+            path: url.pathname,
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+          }, (res) => {
+            let data = '';
+            res.on('data', chunk => data += chunk);
+            res.on('end', () => resolve(data));
+          });
+          req.on('error', reject);
+          req.write(updateData);
+          req.end();
+        });
+      }
+      
+      return { statusCode: 200, headers: corsHeaders, body: '' };
+    } catch (error) {
+      await client.query('ROLLBACK');
+      console.error('Setup complete error:', error);
+      return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ text: 'エラーが発生しました: ' + error.message }) };
+    } finally {
+      client.release();
+    }
+  }
+  
+  return { statusCode: 200, headers: corsHeaders, body: '' };
+}
+
+function buildSetupCompleteEmail(reservation, allocatedEquipment) {
+  const bookingCode = reservation.booking_code || reservation.id.substring(0,8);
+  let email = reservation.user_alias + ' 様\n\n';
+  email += 'いつもお疲れ様です。\n';
+  email += 'Loaner機器予約システムより、機器準備完了のご連絡です。\n\n';
+  email += '■ 予約詳細\n';
+  email += '予約コード: ' + bookingCode + '\n';
+  email += '受取サイト: ' + reservation.pickup_site + '\n';
+  email += '利用期間: ' + reservation.start_date.toISOString().split('T')[0] + ' ～ ' + reservation.end_date.toISOString().split('T')[0] + '\n\n';
+  
+  if (allocatedEquipment.length > 0) {
+    email += '■ 割り当てられた機器\n';
+    allocatedEquipment.forEach(eq => {
+      let displayName = eq.equipment_code;
+      if (eq.equipment_code.startsWith('NAL')) displayName = 'Non-Amazon Loaner ' + eq.equipment_code.replace('NAL', '');
+      else if (eq.equipment_code.startsWith('AL')) displayName = 'Amazon Loaner ' + eq.equipment_code.replace('AL', '');
+      else if (eq.equipment_code.startsWith('Monitor')) displayName = 'Monitor ' + eq.equipment_code.replace('Monitor', '');
+      email += '・' + displayName + '\n';
+    });
+    email += '\n';
+  }
+  
+  email += '■ 受取場所\n';
+  email += reservation.pickup_site + ' Pickup Station\n';
+  email += '場所が不明な場合: https://w.amazon.com/bin/view/JP-Local-IT/IT_Support_About_Hardware_On_HND10_HND11_HND17/Pick_up_station\n\n';
+  email += '■ 受取手順\n';
+  email += 'Pickup Stationの木棚に予約コードとAliasが記載されたPCをお取りください。\n';
+  email += 'IT窓口が閉まっている時間帯でも受け取りが可能です。\n\n';
+  email += 'ご不明な点がございましたら、ITチームまでお気軽にお声がけください。\n\n';
+  email += '---\nAmazon IT';
+  
+  return email;
+}
+
+async function sendSetupCompleteEmail(to, subject, message) {
+  const https = require('https');
+  const postData = JSON.stringify({ to, subject, message });
+  
+  return new Promise((resolve, reject) => {
+    const req = https.request({
+      hostname: '8ah123if48.execute-api.ap-northeast-1.amazonaws.com',
+      path: '/send-email',
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(postData) }
+    }, (res) => {
+      let data = '';
+      res.on('data', chunk => data += chunk);
+      res.on('end', () => resolve(data));
+    });
+    req.on('error', reject);
+    req.write(postData);
+    req.end();
+  });
 }
