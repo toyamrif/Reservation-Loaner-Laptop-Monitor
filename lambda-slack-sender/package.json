@@ -1,0 +1,8 @@
+{
+  "name": "lambda-slack-sender",
+  "version": "1.0.0",
+  "description": "Slack notification sender (VPC外)",
+  "dependencies": {
+    "@aws-sdk/client-secrets-manager": "^3.0.0"
+  }
+}
