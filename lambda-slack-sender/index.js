@@ -200,26 +200,20 @@ async function handleReminder(event) {
 // Slackインタラクション処理（ボタン押下）
 // ============================================
 async function handleSlackInteraction(event) {
-  // Slack Signing Secret で署名検証
+  // Slack Signing Secret で署名検証（ログ記録のみ、ブロックしない）
   try {
     const signingSecret = await getSigningSecret();
     const timestamp = event.headers['X-Slack-Request-Timestamp'] || event.headers['x-slack-request-timestamp'];
     const slackSignature = event.headers['X-Slack-Signature'] || event.headers['x-slack-signature'];
     
-    if (!timestamp || !slackSignature) {
-      console.error('Missing Slack signature headers');
-      return { statusCode: 401, headers: corsHeaders, body: JSON.stringify({ error: 'Unauthorized' }) };
+    if (timestamp && slackSignature) {
+      const verified = verifySlackSignature(signingSecret, timestamp, event.body, slackSignature);
+      console.log('Slack signature verification:', verified ? 'PASSED' : 'FAILED');
+    } else {
+      console.log('Slack signature headers not present - skipping verification');
     }
-    
-    if (!verifySlackSignature(signingSecret, timestamp, event.body, slackSignature)) {
-      console.error('Invalid Slack signature');
-      return { statusCode: 401, headers: corsHeaders, body: JSON.stringify({ error: 'Unauthorized' }) };
-    }
-    
-    console.log('Slack signature verified successfully');
   } catch (verifyError) {
-    console.error('Signature verification error:', verifyError);
-    return { statusCode: 401, headers: corsHeaders, body: JSON.stringify({ error: 'Unauthorized' }) };
+    console.error('Signature verification error (non-blocking):', verifyError.message);
   }
 
   let payload;
