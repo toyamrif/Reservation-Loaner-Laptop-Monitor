@@ -414,6 +414,10 @@
                     <textarea id="notes" name="notes" rows="3" placeholder="特記事項があればご記入ください" style="width: 100%; padding: 12px 14px; background: #FFFFFF; border: 1px solid #CCC; border-radius: 10px; font-size: 15px; color: #111; resize: vertical; font-family: inherit;"></textarea>
                 </div>
                 
+                <!-- 在庫不足アラート（動的表示） -->
+                <div id="inventoryAlert" style="display: none; background: #FFF4E5; border: 1px solid #FF9900; border-radius: 10px; padding: 15px 20px; margin-bottom: 20px;">
+                </div>
+
                 <!-- Submit Button -->
                 <button type="submit" class="btn-submit" data-lang-ja="予約する" data-lang-en="Submit">予約する</button>
             </form>
@@ -928,6 +932,8 @@
                             pickupSiteGroup.appendChild(inventoryDiv);
                         }
                     }
+                    
+                    updateInventoryAlert();
                 });
             }
             
@@ -1016,17 +1022,111 @@
                 for (let siteId in inventory) {
                     if (siteId === originalSite) continue;
                     
-                    const availability = checkInventoryAvailability(siteId, nonAmazonCount, amazonCount, monitorCount);
-                    if (availability.available) {
-                        alternatives.push({
-                            site: siteId,
-                            message: `${siteId}では全ての機器が利用可能です`
-                        });
-                    }
+                    const site = inventory[siteId];
+                    const nonAmazonAvail = site['Non-Amazon PC']?.available || 0;
+                    const amazonAvail = site['Amazon PC']?.available || 0;
+                    const monitorAvail = site['Monitor']?.available || 0;
+                    
+                    const canFulfill = (nonAmazonCount <= nonAmazonAvail) && 
+                                       (amazonCount <= amazonAvail) && 
+                                       (monitorCount <= monitorAvail);
+                    
+                    alternatives.push({
+                        site: siteId,
+                        canFulfill: canFulfill,
+                        nonAmazon: nonAmazonAvail,
+                        amazon: amazonAvail,
+                        monitor: monitorAvail
+                    });
                 }
                 
                 return alternatives;
             }
+
+            // リアルタイム在庫チェック＆代替提案UI
+            function updateInventoryAlert() {
+                const alertDiv = document.getElementById('inventoryAlert');
+                if (!alertDiv) return;
+                
+                const selectedSite = pickupSiteSelect ? pickupSiteSelect.value : '';
+                if (!selectedSite || !inventory || !inventory[selectedSite]) {
+                    alertDiv.style.display = 'none';
+                    return;
+                }
+                
+                if (nonAmazonCount === 0 && amazonCount === 0 && monitorCount === 0) {
+                    alertDiv.style.display = 'none';
+                    return;
+                }
+                
+                const availability = checkInventoryAvailability(selectedSite, nonAmazonCount, amazonCount, monitorCount);
+                
+                if (availability.available) {
+                    alertDiv.style.display = 'none';
+                    return;
+                }
+                
+                // 在庫不足 → 代替サイト提案を表示
+                const site = inventory[selectedSite];
+                const shortages = [];
+                if (nonAmazonCount > (site['Non-Amazon PC']?.available || 0)) {
+                    shortages.push('Non-Amazon PC（要求: ' + nonAmazonCount + '台, 在庫: ' + (site['Non-Amazon PC']?.available || 0) + '台）');
+                }
+                if (amazonCount > (site['Amazon PC']?.available || 0)) {
+                    shortages.push('Amazon PC（要求: ' + amazonCount + '台, 在庫: ' + (site['Amazon PC']?.available || 0) + '台）');
+                }
+                if (monitorCount > (site['Monitor']?.available || 0)) {
+                    shortages.push('モニター（要求: ' + monitorCount + '台, 在庫: ' + (site['Monitor']?.available || 0) + '台）');
+                }
+                
+                const alternatives = suggestAlternatives(selectedSite, nonAmazonCount, amazonCount, monitorCount);
+                const available = alternatives.filter(a => a.canFulfill);
+                const partial = alternatives.filter(a => !a.canFulfill);
+                
+                let html = '<div style="margin-bottom: 8px; font-weight: 700; color: #CC0C39; font-size: 15px;">⚠️ ' + selectedSite + ' で在庫が不足しています</div>';
+                html += '<div style="color: #555; font-size: 13px; margin-bottom: 10px;">';
+                shortages.forEach(s => { html += '• ' + s + '<br>'; });
+                html += '</div>';
+                
+                if (available.length > 0) {
+                    html += '<div style="margin-top: 10px; font-weight: 600; color: #067D62; font-size: 14px;">💡 以下のサイトなら全て予約可能です：</div>';
+                    html += '<div style="margin-top: 8px; display: flex; gap: 10px; flex-wrap: wrap;">';
+                    available.forEach(alt => {
+                        html += '<button type="button" onclick="switchSite(\'' + alt.site + '\')" style="padding: 10px 20px; background: #067D62; color: #fff; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; transition: opacity 0.2s;"';
+                        html += ' onmouseover="this.style.opacity=0.85" onmouseout="this.style.opacity=1">';
+                        html += '📍 ' + alt.site + ' に変更';
+                        html += '</button>';
+                    });
+                    html += '</div>';
+                    html += '<div style="margin-top: 8px; color: #555; font-size: 12px;">';
+                    available.forEach(alt => {
+                        html += alt.site + ': Non-Amazon PC ' + alt.nonAmazon + '台 / Amazon PC ' + alt.amazon + '台 / モニター ' + alt.monitor + '台<br>';
+                    });
+                    html += '</div>';
+                }
+                
+                if (available.length === 0) {
+                    html += '<div style="margin-top: 10px; color: #CC0C39; font-size: 13px;">😔 現在、どのサイトでも要求数量を満たせません。数量を減らしてお試しください。</div>';
+                    if (partial.length > 0) {
+                        html += '<div style="margin-top: 8px; color: #555; font-size: 12px;">';
+                        html += '他サイトの在庫状況：<br>';
+                        partial.forEach(alt => {
+                            html += alt.site + ': Non-Amazon PC ' + alt.nonAmazon + '台 / Amazon PC ' + alt.amazon + '台 / モニター ' + alt.monitor + '台<br>';
+                        });
+                        html += '</div>';
+                    }
+                }
+                
+                alertDiv.innerHTML = html;
+                alertDiv.style.display = 'block';
+            }
+            
+            // サイト切り替え関数（グローバル）
+            window.switchSite = function(newSite) {
+                pickupSiteSelect.value = newSite;
+                pickupSiteSelect.dispatchEvent(new Event('change'));
+                updateInventoryAlert();
+            };
             
             // 在庫状況表示機能
             function displayInventoryStatus(siteId) {
@@ -1094,19 +1194,8 @@
                 if (selectedSite && inventory && Object.keys(inventory).length > 0) {
                     const availability = checkInventoryAvailability(selectedSite, nonAmazonCount, amazonCount, monitorCount);
                     if (!availability.available) {
-                        const alternatives = suggestAlternatives(selectedSite, nonAmazonCount, amazonCount, monitorCount);
-                        let errorMsg = availability.reason;
-                        
-                        if (alternatives.length > 0) {
-                            errorMsg += '\n\n代替案:';
-                            alternatives.forEach(alt => {
-                                errorMsg += `\n• ${alt.message}`;
-                            });
-                        } else {
-                            errorMsg += '\n\n申し訳ございませんが、現在どのサイトでも在庫が不足しています。';
-                        }
-                        
-                        alert(errorMsg);
+                        updateInventoryAlert();
+                        document.getElementById('inventoryAlert').scrollIntoView({ behavior: 'smooth', block: 'center' });
                         return false;
                     }
                 }
@@ -1154,6 +1243,7 @@
                 if (totalLaptops < MAX_TOTAL_LAPTOPS) {
                     nonAmazonCount++;
                     nonAmazonQuantitySpan.textContent = nonAmazonCount;
+                    updateInventoryAlert();
                 } else {
                     showError('maxLaptops');
                 }
@@ -1163,6 +1253,7 @@
                 if (nonAmazonCount > 0) {
                     nonAmazonCount--;
                     nonAmazonQuantitySpan.textContent = nonAmazonCount;
+                    updateInventoryAlert();
                 }
             });
 
@@ -1171,6 +1262,7 @@
                 if (totalLaptops < MAX_TOTAL_LAPTOPS) {
                     amazonCount++;
                     amazonQuantitySpan.textContent = amazonCount;
+                    updateInventoryAlert();
                 } else {
                     showError('maxLaptops');
                 }
@@ -1180,6 +1272,7 @@
                 if (amazonCount > 0) {
                     amazonCount--;
                     amazonQuantitySpan.textContent = amazonCount;
+                    updateInventoryAlert();
                 }
             });
 
@@ -1187,6 +1280,7 @@
                 if (monitorCount < MAX_MONITORS) {
                     monitorCount++;
                     monitorQuantitySpan.textContent = monitorCount;
+                    updateInventoryAlert();
                 }
             });
 
@@ -1194,6 +1288,7 @@
                 if (monitorCount > 0) {
                     monitorCount--;
                     monitorQuantitySpan.textContent = monitorCount;
+                    updateInventoryAlert();
                 }
             });
 
