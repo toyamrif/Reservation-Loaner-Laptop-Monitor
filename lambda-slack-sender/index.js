@@ -7,12 +7,16 @@
  */
 
 const https = require('https');
+const crypto = require('crypto');
 const { SecretsManagerClient, GetSecretValueCommand } = require('@aws-sdk/client-secrets-manager');
 
 const secretsClient = new SecretsManagerClient({ region: 'ap-northeast-1' });
 
 const INVENTORY_API = 'https://qqu1ilmtn9.execute-api.ap-northeast-1.amazonaws.com/prod';
 const EMAIL_API = 'https://8ah123if48.execute-api.ap-northeast-1.amazonaws.com/send-email';
+
+// キャッシュ
+let cachedSigningSecret = null;
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -24,6 +28,26 @@ async function getSlackBotToken() {
   const command = new GetSecretValueCommand({ SecretId: 'slack/loaner-bot-token' });
   const secretData = await secretsClient.send(command);
   return JSON.parse(secretData.SecretString).bot_token;
+}
+
+async function getSigningSecret() {
+  if (cachedSigningSecret) return cachedSigningSecret;
+  const command = new GetSecretValueCommand({ SecretId: 'slack/signing-secret' });
+  const secretData = await secretsClient.send(command);
+  cachedSigningSecret = JSON.parse(secretData.SecretString).signing_secret;
+  return cachedSigningSecret;
+}
+
+function verifySlackSignature(signingSecret, timestamp, body, signature) {
+  // リプレイ攻撃防止: 5分以上前のリクエストは拒否
+  const now = Math.floor(Date.now() / 1000);
+  if (Math.abs(now - parseInt(timestamp)) > 300) {
+    console.warn('Request timestamp too old:', timestamp);
+    return false;
+  }
+  const sigBasestring = 'v0:' + timestamp + ':' + body;
+  const mySignature = 'v0=' + crypto.createHmac('sha256', signingSecret).update(sigBasestring).digest('hex');
+  return crypto.timingSafeEqual(Buffer.from(mySignature), Buffer.from(signature));
 }
 
 function httpsRequest(url, method, data, headers) {
@@ -176,6 +200,28 @@ async function handleReminder(event) {
 // Slackインタラクション処理（ボタン押下）
 // ============================================
 async function handleSlackInteraction(event) {
+  // Slack Signing Secret で署名検証
+  try {
+    const signingSecret = await getSigningSecret();
+    const timestamp = event.headers['X-Slack-Request-Timestamp'] || event.headers['x-slack-request-timestamp'];
+    const slackSignature = event.headers['X-Slack-Signature'] || event.headers['x-slack-signature'];
+    
+    if (!timestamp || !slackSignature) {
+      console.error('Missing Slack signature headers');
+      return { statusCode: 401, headers: corsHeaders, body: JSON.stringify({ error: 'Unauthorized' }) };
+    }
+    
+    if (!verifySlackSignature(signingSecret, timestamp, event.body, slackSignature)) {
+      console.error('Invalid Slack signature');
+      return { statusCode: 401, headers: corsHeaders, body: JSON.stringify({ error: 'Unauthorized' }) };
+    }
+    
+    console.log('Slack signature verified successfully');
+  } catch (verifyError) {
+    console.error('Signature verification error:', verifyError);
+    return { statusCode: 401, headers: corsHeaders, body: JSON.stringify({ error: 'Unauthorized' }) };
+  }
+
   let payload;
   try {
     const body = event.body;
