@@ -1,0 +1,1474 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>予約管理 - Loaner機器予約システム</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Amazon Ember', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+            background: #EAEDED;
+            min-height: 100vh;
+            padding: 0;
+        }
+
+        .header-bar {
+            background: #37475A;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-bar .logo {
+            color: #FF9900;
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .header-bar .nav-links {
+            display: flex;
+            gap: 15px;
+        }
+
+        .header-bar .nav-links a {
+            color: #fff;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .language-selector {
+            position: fixed;
+            top: 12px;
+            right: 20px;
+            z-index: 1000;
+        }
+
+        .language-selector select {
+            padding: 8px 12px;
+            background: #232F3E;
+            border: 1px solid #485769;
+            border-radius: 10px;
+            color: #ffffff;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .language-selector select:hover {
+            background: #37475A;
+        }
+
+        .language-selector select option {
+            background: #232F3E;
+            color: #ffffff;
+        }
+
+        .page-wrapper {
+            display: flex;
+            justify-content: center;
+            padding: 40px 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            background: #FFFFFF;
+            border-radius: 16px;
+            border: 1px solid #DDD;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            padding: 40px 50px;
+        }
+
+        .form-title {
+            font-size: 24px;
+            color: #232F3E;
+            font-weight: 700;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        /* Notification area */
+        .notification-bar {
+            display: none;
+            padding: 15px 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            font-weight: 500;
+            position: relative;
+            animation: slideDown 0.3s ease;
+        }
+
+        .notification-bar.show {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .notification-bar.error {
+            background: rgba(255, 107, 107, 0.9);
+            color: white;
+        }
+
+        .notification-bar.success {
+            background: rgba(6, 125, 98, 0.9);
+            color: white;
+        }
+
+        .notification-bar .dismiss-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 18px;
+            cursor: pointer;
+            padding: 0 0 0 15px;
+            line-height: 1;
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Search section */
+        .search-section {
+            margin-bottom: 30px;
+        }
+
+        .search-form {
+            display: flex;
+            gap: 10px;
+        }
+
+        .search-input {
+            flex: 1;
+            padding: 12px 14px;
+            background: #FFFFFF;
+            border: 1px solid #CCC;
+            border-radius: 10px;
+            font-size: 15px;
+            color: #111;
+            transition: all 0.2s;
+        }
+
+        .search-input::placeholder {
+            color: #888;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #FF9900;
+            box-shadow: 0 0 3px rgba(255, 153, 0, 0.5);
+        }
+
+        .search-btn {
+            padding: 12px 24px;
+            background: #FF9900;
+            color: #111;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 15px;
+            transition: all 0.2s;
+            position: relative;
+            min-width: 80px;
+        }
+
+        .search-btn:hover {
+            opacity: 0.9;
+        }
+
+        .search-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .search-btn .spinner {
+            display: none;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #111;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+        }
+
+        .search-btn.loading .spinner {
+            display: inline-block;
+        }
+
+        .search-btn.loading .btn-text {
+            display: none;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .search-error {
+            color: #CC0C39;
+            font-size: 13px;
+            margin-top: 8px;
+            display: none;
+        }
+
+        .search-error.show {
+            display: block;
+        }
+
+        /* Reservation list */
+        .reservation-list {
+            margin-bottom: 30px;
+        }
+
+        .reservation-card {
+            background: #F7F8FA;
+            border: 1px solid #E0E0E0;
+            border-radius: 12px;
+            padding: 16px 20px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .reservation-card:hover {
+            border-color: #FF9900;
+            box-shadow: 0 2px 8px rgba(255, 153, 0, 0.15);
+        }
+
+        .reservation-card.selected {
+            border-color: #FF9900;
+            background: #FFF8EE;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .card-booking-code {
+            font-weight: 700;
+            font-size: 16px;
+            color: #232F3E;
+        }
+
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-badge.pending {
+            background: #E8F0FE;
+            color: #1A73E8;
+        }
+
+        .status-badge.confirmed {
+            background: #E6F4F0;
+            color: #067D62;
+        }
+
+        .status-badge.setup_complete {
+            background: #FFF4E5;
+            color: #B8860B;
+        }
+
+        .status-badge.returned {
+            background: #F3E8FF;
+            color: #7C3AED;
+        }
+
+        .status-badge.cancelled {
+            background: #F0F0F0;
+            color: #888;
+        }
+
+        .card-details {
+            font-size: 13px;
+            color: #555;
+            line-height: 1.6;
+        }
+
+        .no-results {
+            text-align: center;
+            color: #888;
+            padding: 40px 20px;
+            font-size: 15px;
+        }
+
+        /* Detail panel */
+        .detail-panel {
+            display: none;
+            background: #F7F8FA;
+            border: 1px solid #E0E0E0;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+
+        .detail-panel.show {
+            display: block;
+        }
+
+        .detail-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #232F3E;
+            margin-bottom: 20px;
+        }
+
+        .detail-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .detail-item {
+            font-size: 14px;
+        }
+
+        .detail-label {
+            color: #888;
+            font-size: 12px;
+            margin-bottom: 4px;
+        }
+
+        .detail-value {
+            color: #232F3E;
+            font-weight: 500;
+        }
+
+        .equipment-list {
+            margin-bottom: 16px;
+        }
+
+        .equipment-item {
+            font-size: 13px;
+            color: #555;
+            padding: 4px 0;
+        }
+
+        .allocated-list {
+            margin-bottom: 16px;
+        }
+
+        .allocated-item {
+            display: inline-block;
+            padding: 3px 10px;
+            background: #E8F0FE;
+            border: 1px solid #C2D7F0;
+            border-radius: 15px;
+            color: #232F3E;
+            font-size: 12px;
+            font-weight: 500;
+            margin: 3px 4px 3px 0;
+        }
+
+        .deadline-message {
+            display: none;
+            background: #FFF4E5;
+            border: 1px solid #FF9900;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 16px;
+            font-size: 13px;
+            color: #B8860B;
+        }
+
+        .deadline-message.show {
+            display: block;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        .btn-modify, .btn-cancel {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .btn-modify {
+            background: #FF9900;
+            color: #111;
+        }
+
+        .btn-cancel {
+            background: #CC0C39;
+            color: #fff;
+        }
+
+        .btn-modify:hover, .btn-cancel:hover {
+            opacity: 0.9;
+        }
+
+        .btn-modify:disabled, .btn-cancel:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Modification form */
+        .modification-form {
+            display: none;
+            background: #FFFFFF;
+            border: 1px solid #E0E0E0;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 16px;
+        }
+
+        .modification-form.show {
+            display: block;
+        }
+
+        .mod-form-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #232F3E;
+            margin-bottom: 16px;
+        }
+
+        .mod-form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .mod-form-group label {
+            display: block;
+            margin-bottom: 6px;
+            color: #232F3E;
+            font-weight: 600;
+            font-size: 13px;
+        }
+
+        .mod-form-group input[type="date"] {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #CCC;
+            border-radius: 8px;
+            font-size: 14px;
+            color: #111;
+        }
+
+        .mod-form-group input[type="date"]:focus {
+            outline: none;
+            border-color: #FF9900;
+            box-shadow: 0 0 3px rgba(255, 153, 0, 0.5);
+        }
+
+        .mod-form-error {
+            color: #CC0C39;
+            font-size: 13px;
+            margin-bottom: 12px;
+            display: none;
+        }
+
+        .mod-form-error.show {
+            display: block;
+        }
+
+        .mod-form-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-mod-submit, .btn-mod-cancel {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .btn-mod-submit {
+            background: #FF9900;
+            color: #111;
+        }
+
+        .btn-mod-cancel {
+            background: #E7E9EC;
+            color: #111;
+        }
+
+        .btn-mod-submit:hover, .btn-mod-cancel:hover {
+            opacity: 0.9;
+        }
+
+        /* Cancellation modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-overlay.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: #FFFFFF;
+            border-radius: 16px;
+            padding: 30px;
+            max-width: 400px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            text-align: center;
+        }
+
+        .modal-message {
+            font-size: 16px;
+            color: #232F3E;
+            margin-bottom: 24px;
+            font-weight: 500;
+        }
+
+        .modal-error {
+            color: #CC0C39;
+            font-size: 13px;
+            margin-bottom: 12px;
+            display: none;
+        }
+
+        .modal-error.show {
+            display: block;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+        }
+
+        .btn-modal-yes, .btn-modal-no {
+            padding: 10px 30px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .btn-modal-yes {
+            background: #CC0C39;
+            color: #fff;
+        }
+
+        .btn-modal-no {
+            background: #E7E9EC;
+            color: #111;
+        }
+
+        .btn-modal-yes:hover, .btn-modal-no:hover {
+            opacity: 0.9;
+        }
+
+        /* Mobile responsive */
+        @media (max-width: 600px) {
+            .page-wrapper {
+                padding: 20px 10px;
+            }
+
+            .container {
+                padding: 25px 20px;
+            }
+
+            .search-form {
+                flex-direction: column;
+            }
+
+            .detail-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .mod-form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+            }
+
+            .language-selector {
+                top: 12px;
+                right: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header-bar">
+        <div class="logo">📋 <span data-lang-ja="予約管理" data-lang-en="Reservation Management">予約管理</span></div>
+        <div class="nav-links">
+            <a href="index.html">🖥️ 予約システム</a>
+            <a href="return.html">🔄 返却管理</a>
+            <a href="admin.html">🛠️ 管理画面</a>
+        </div>
+    </div>
+
+    <div class="language-selector">
+        <select id="languageSelect" onchange="changeLanguage()">
+            <option value="ja">日本語</option>
+            <option value="en">English</option>
+        </select>
+    </div>
+
+    <div class="page-wrapper">
+        <div class="container">
+            <h1 id="pageTitle" class="form-title" data-lang-ja="📋 予約管理" data-lang-en="📋 Reservation Management">📋 予約管理</h1>
+
+            <!-- Notification bar -->
+            <div id="notificationBar" class="notification-bar">
+                <span id="notificationMessage"></span>
+                <button class="dismiss-btn" onclick="dismissNotification()">&times;</button>
+            </div>
+
+            <!-- Search section -->
+            <div class="search-section">
+                <div class="search-form">
+                    <input type="text" id="searchInput" class="search-input"
+                           data-lang-placeholder-ja="エイリアスまたは予約コード (例: R-01234)"
+                           data-lang-placeholder-en="Alias or booking code (e.g. R-01234)"
+                           placeholder="エイリアスまたは予約コード (例: R-01234)">
+                    <button id="searchBtn" class="search-btn" onclick="handleSearch()">
+                        <span class="btn-text" data-lang-ja="検索" data-lang-en="Search">検索</span>
+                        <span class="spinner"></span>
+                    </button>
+                </div>
+                <div id="searchError" class="search-error"></div>
+            </div>
+
+            <!-- Reservation list -->
+            <div id="reservationList" class="reservation-list"></div>
+
+            <!-- Detail panel -->
+            <div id="detailPanel" class="detail-panel">
+                <div class="detail-title" id="detailTitle"></div>
+                <div class="detail-grid">
+                    <div class="detail-item">
+                        <div class="detail-label" data-lang-ja="予約コード" data-lang-en="Booking Code">予約コード</div>
+                        <div class="detail-value" id="detailBookingCode"></div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label" data-lang-ja="エイリアス" data-lang-en="Alias">エイリアス</div>
+                        <div class="detail-value" id="detailAlias"></div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label" data-lang-ja="受取拠点" data-lang-en="Pickup Site">受取拠点</div>
+                        <div class="detail-value" id="detailPickupSite"></div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label" data-lang-ja="ステータス" data-lang-en="Status">ステータス</div>
+                        <div class="detail-value" id="detailStatus"></div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label" data-lang-ja="貸出開始日" data-lang-en="Start Date">貸出開始日</div>
+                        <div class="detail-value" id="detailStartDate"></div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label" data-lang-ja="返却予定日" data-lang-en="End Date">返却予定日</div>
+                        <div class="detail-value" id="detailEndDate"></div>
+                    </div>
+                </div>
+
+                <div id="detailEquipment" class="equipment-list"></div>
+                <div id="detailAllocated" class="allocated-list"></div>
+
+                <div id="deadlineMessage" class="deadline-message"></div>
+
+                <div id="actionButtons" class="action-buttons" style="display: none;">
+                    <button id="btnModify" class="btn-modify" data-lang-ja="日程変更" data-lang-en="Change Dates" onclick="showModificationForm()">日程変更</button>
+                    <button id="btnCancel" class="btn-cancel" data-lang-ja="キャンセル" data-lang-en="Cancel" onclick="showCancelDialog()">キャンセル</button>
+                </div>
+
+                <!-- Modification form (inline) -->
+                <div id="modificationForm" class="modification-form">
+                    <div class="mod-form-title" data-lang-ja="日程変更" data-lang-en="Change Dates">日程変更</div>
+                    <div id="modFormError" class="mod-form-error"></div>
+                    <div class="mod-form-row">
+                        <div class="mod-form-group">
+                            <label for="modStartDate" data-lang-ja="貸出開始日" data-lang-en="Start Date">貸出開始日</label>
+                            <input type="date" id="modStartDate">
+                        </div>
+                        <div class="mod-form-group">
+                            <label for="modEndDate" data-lang-ja="返却予定日" data-lang-en="End Date">返却予定日</label>
+                            <input type="date" id="modEndDate">
+                        </div>
+                    </div>
+                    <div class="mod-form-actions">
+                        <button class="btn-mod-submit" data-lang-ja="変更する" data-lang-en="Submit" onclick="submitModification()">変更する</button>
+                        <button class="btn-mod-cancel" data-lang-ja="キャンセル" data-lang-en="Cancel" onclick="hideModificationForm()">キャンセル</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cancellation modal -->
+    <div id="cancelModal" class="modal-overlay">
+        <div class="modal-content">
+            <div id="cancelModalMessage" class="modal-message" data-lang-ja="この予約をキャンセルしますか？" data-lang-en="Cancel this reservation?">この予約をキャンセルしますか？</div>
+            <div id="cancelModalError" class="modal-error"></div>
+            <div class="modal-actions">
+                <button class="btn-modal-yes" data-lang-ja="はい" data-lang-en="Yes" onclick="confirmCancel()">はい</button>
+                <button class="btn-modal-no" data-lang-ja="いいえ" data-lang-en="No" onclick="hideCancelDialog()">いいえ</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        'use strict';
+
+        // API Base URL
+        const API_BASE_URL = 'https://qqu1ilmtn9.execute-api.ap-northeast-1.amazonaws.com/prod';
+
+        // Current language
+        let currentLanguage = 'ja';
+
+        // Currently selected reservation
+        let selectedReservation = null;
+
+        // Current search results
+        let currentResults = [];
+
+        // Notification auto-dismiss timer
+        let notificationTimer = null;
+
+        // ============================================================
+        // Translations (Task 2)
+        // ============================================================
+        const translations = {
+            ja: {
+                pageTitle: '📋 予約管理',
+                searchPlaceholder: 'エイリアスまたは予約コード (例: R-01234)',
+                searchButton: '検索',
+                noResults: '予約が見つかりませんでした',
+                emptyQuery: 'エイリアスまたは予約コードを入力してください',
+                modifyButton: '日程変更',
+                cancelButton: 'キャンセル',
+                cancelConfirm: 'この予約をキャンセルしますか？',
+                cancelYes: 'はい',
+                cancelNo: 'いいえ',
+                cancelSuccess: '予約がキャンセルされました',
+                modifySuccess: '予約日程が変更されました',
+                deadlineExpired: '変更・キャンセルの受付は終了しました。IT窓口までお越しください',
+                weekdayOnly: '貸出日は平日のみ選択可能です',
+                maxRentalPeriod: '貸出期間は最大90日です',
+                startDateMin: '貸出開始日は2日後以降を選択してください',
+                endDateInvalid: '返却日は貸出開始日以降を選択してください',
+                networkError: 'ネットワークエラーが発生しました。接続を確認してください',
+                notFoundError: '予約が見つかりませんでした',
+                serverError: 'サーバーエラーが発生しました。しばらくしてから再度お試しください',
+                statusPending: '予約済み',
+                statusConfirmed: '確認済み',
+                statusSetupComplete: 'セットアップ完了',
+                statusReturned: '返却済み',
+                statusCancelled: 'キャンセル済み',
+                equipAmazonPc: 'Amazon PC',
+                equipNonAmazonPc: 'Non-Amazon PC',
+                equipMonitor: 'モニター',
+                labelBookingCode: '予約コード',
+                labelAlias: 'エイリアス',
+                labelPickupSite: '受取拠点',
+                labelStartDate: '貸出開始日',
+                labelEndDate: '返却予定日',
+                labelStatus: 'ステータス',
+                labelEquipment: '予約機器',
+                labelAllocated: '割り当て機器',
+                loading: '検索中...',
+                modFormTitle: '日程変更',
+                modSubmit: '変更する',
+                modCancel: 'キャンセル'
+            },
+            en: {
+                pageTitle: '📋 Reservation Management',
+                searchPlaceholder: 'Alias or booking code (e.g. R-01234)',
+                searchButton: 'Search',
+                noResults: 'No reservations found',
+                emptyQuery: 'Please enter an alias or booking code',
+                modifyButton: 'Change Dates',
+                cancelButton: 'Cancel',
+                cancelConfirm: 'Cancel this reservation?',
+                cancelYes: 'Yes',
+                cancelNo: 'No',
+                cancelSuccess: 'Reservation has been cancelled',
+                modifySuccess: 'Reservation dates have been updated',
+                deadlineExpired: 'The modification deadline has passed. Please visit the IT counter.',
+                weekdayOnly: 'Start date must be a weekday',
+                maxRentalPeriod: 'Maximum rental period is 90 days',
+                startDateMin: 'Start date must be at least 2 days from today',
+                endDateInvalid: 'End date must be on or after start date',
+                networkError: 'Network error. Please check your connection.',
+                notFoundError: 'Reservation not found',
+                serverError: 'Server error. Please try again later.',
+                statusPending: 'Pending',
+                statusConfirmed: 'Confirmed',
+                statusSetupComplete: 'Setup Complete',
+                statusReturned: 'Returned',
+                statusCancelled: 'Cancelled',
+                equipAmazonPc: 'Amazon PC',
+                equipNonAmazonPc: 'Non-Amazon PC',
+                equipMonitor: 'Monitor',
+                labelBookingCode: 'Booking Code',
+                labelAlias: 'Alias',
+                labelPickupSite: 'Pickup Site',
+                labelStartDate: 'Start Date',
+                labelEndDate: 'End Date',
+                labelStatus: 'Status',
+                labelEquipment: 'Equipment',
+                labelAllocated: 'Allocated Equipment',
+                loading: 'Searching...',
+                modFormTitle: 'Change Dates',
+                modSubmit: 'Submit',
+                modCancel: 'Cancel'
+            }
+        };
+
+        // ============================================================
+        // Language switching (Task 2)
+        // ============================================================
+        function changeLanguage() {
+            const select = document.getElementById('languageSelect');
+            currentLanguage = select.value;
+            updateLanguage();
+        }
+        // Expose to global scope for inline onchange
+        window.changeLanguage = changeLanguage;
+
+        function updateLanguage() {
+            const lang = currentLanguage;
+
+            // Update all elements with data-lang-ja / data-lang-en attributes
+            document.querySelectorAll('[data-lang-ja]').forEach(function(el) {
+                const text = el.getAttribute('data-lang-' + lang);
+                if (text !== null) {
+                    el.textContent = text;
+                }
+            });
+
+            // Update placeholder attributes
+            document.querySelectorAll('[data-lang-placeholder-ja]').forEach(function(el) {
+                const text = el.getAttribute('data-lang-placeholder-' + lang);
+                if (text !== null) {
+                    el.placeholder = text;
+                }
+            });
+
+            // Re-render list and detail if data exists
+            if (currentResults.length > 0) {
+                renderReservationList(currentResults);
+            }
+            if (selectedReservation) {
+                renderDetailPanel(selectedReservation);
+            }
+        }
+
+        // ============================================================
+        // Helper: get translated text
+        // ============================================================
+        function t(key) {
+            return translations[currentLanguage][key] || key;
+        }
+
+        function getStatusLabel(status) {
+            const map = {
+                pending: 'statusPending',
+                confirmed: 'statusConfirmed',
+                setup_complete: 'statusSetupComplete',
+                returned: 'statusReturned',
+                cancelled: 'statusCancelled'
+            };
+            return t(map[status] || status);
+        }
+
+        function getEquipmentLabel(type) {
+            const map = {
+                amazon_pc: 'equipAmazonPc',
+                non_amazon_pc: 'equipNonAmazonPc',
+                monitor: 'equipMonitor'
+            };
+            return t(map[type] || type);
+        }
+
+        // ============================================================
+        // Notification area (Task 8)
+        // ============================================================
+        function showNotification(message, type) {
+            var bar = document.getElementById('notificationBar');
+            var msg = document.getElementById('notificationMessage');
+            msg.textContent = message;
+            bar.className = 'notification-bar show ' + type;
+
+            // Clear any existing timer
+            if (notificationTimer) {
+                clearTimeout(notificationTimer);
+                notificationTimer = null;
+            }
+
+            // Auto-dismiss success after 5 seconds
+            if (type === 'success') {
+                notificationTimer = setTimeout(function() {
+                    dismissNotification();
+                }, 5000);
+            }
+        }
+
+        function dismissNotification() {
+            var bar = document.getElementById('notificationBar');
+            bar.className = 'notification-bar';
+            if (notificationTimer) {
+                clearTimeout(notificationTimer);
+                notificationTimer = null;
+            }
+        }
+        window.dismissNotification = dismissNotification;
+
+        // ============================================================
+        // API error mapping (Task 8)
+        // ============================================================
+        function handleApiError(error, response) {
+            if (!response) {
+                // Network error
+                showNotification(t('networkError'), 'error');
+                return;
+            }
+            if (response.status === 404) {
+                showNotification(t('notFoundError'), 'error');
+            } else if (response.status === 500) {
+                showNotification(t('serverError'), 'error');
+            } else if (response.status === 400) {
+                // Pass-through API error message
+                if (error && error.message) {
+                    showNotification(error.message, 'error');
+                } else if (error && error.error) {
+                    showNotification(error.error, 'error');
+                } else {
+                    showNotification(String(error), 'error');
+                }
+            } else {
+                showNotification(t('networkError'), 'error');
+            }
+        }
+
+        // ============================================================
+        // Search functionality (Task 3)
+        // ============================================================
+        async function searchReservations(query) {
+            var response;
+            try {
+                response = await fetch(API_BASE_URL + '/reservations/search?q=' + encodeURIComponent(query));
+            } catch (e) {
+                handleApiError(e, null);
+                return [];
+            }
+
+            if (!response.ok) {
+                var errorBody = null;
+                try { errorBody = await response.json(); } catch(e) { /* ignore */ }
+                handleApiError(errorBody, response);
+                return [];
+            }
+
+            return await response.json();
+        }
+
+        async function handleSearch() {
+            var input = document.getElementById('searchInput');
+            var query = input.value;
+            var errorEl = document.getElementById('searchError');
+            var btn = document.getElementById('searchBtn');
+
+            // Clear previous errors
+            errorEl.className = 'search-error';
+            errorEl.textContent = '';
+
+            // Empty/whitespace validation
+            if (!query || !query.trim()) {
+                errorEl.textContent = t('emptyQuery');
+                errorEl.className = 'search-error show';
+                return;
+            }
+
+            // Show loading state
+            btn.classList.add('loading');
+            btn.disabled = true;
+
+            try {
+                var results = await searchReservations(query.trim());
+
+                // Sort by start_date descending
+                results.sort(function(a, b) {
+                    return new Date(b.start_date) - new Date(a.start_date);
+                });
+
+                currentResults = results;
+
+                // Hide detail panel when new search
+                hideDetailPanel();
+
+                renderReservationList(results);
+            } finally {
+                btn.classList.remove('loading');
+                btn.disabled = false;
+            }
+        }
+        window.handleSearch = handleSearch;
+
+        // Enter key support
+        document.getElementById('searchInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                handleSearch();
+            }
+        });
+
+        // ============================================================
+        // Reservation list rendering (Task 3)
+        // ============================================================
+        function renderReservationList(reservations) {
+            var container = document.getElementById('reservationList');
+
+            if (!reservations || reservations.length === 0) {
+                container.innerHTML = '<div class="no-results">' + t('noResults') + '</div>';
+                return;
+            }
+
+            var html = '';
+            reservations.forEach(function(res) {
+                var equipSummary = '';
+                if (res.equipment && res.equipment.length > 0) {
+                    equipSummary = res.equipment.map(function(eq) {
+                        return getEquipmentLabel(eq.equipment_type) + ' x' + eq.quantity;
+                    }).join(', ');
+                }
+
+                var startDate = res.start_date ? res.start_date.split('T')[0] : '';
+                var endDate = res.end_date ? res.end_date.split('T')[0] : '';
+                var isSelected = selectedReservation && selectedReservation.id === res.id;
+
+                html += '<div class="reservation-card' + (isSelected ? ' selected' : '') + '" data-id="' + res.id + '" onclick="selectReservation(\'' + res.id + '\')">';
+                html += '<div class="card-header">';
+                html += '<span class="card-booking-code">' + escapeHtml(res.booking_code || '') + '</span>';
+                html += '<span class="status-badge ' + res.status + '">' + getStatusLabel(res.status) + '</span>';
+                html += '</div>';
+                html += '<div class="card-details">';
+                html += '📍 ' + escapeHtml(res.pickup_site || '') + ' &nbsp; 📅 ' + startDate + ' ~ ' + endDate;
+                if (equipSummary) {
+                    html += '<br>💻 ' + escapeHtml(equipSummary);
+                }
+                html += '</div>';
+                html += '</div>';
+            });
+
+            container.innerHTML = html;
+        }
+
+        function selectReservation(id) {
+            var res = currentResults.find(function(r) { return r.id === id; });
+            if (!res) return;
+
+            selectedReservation = res;
+
+            // Update card selection
+            document.querySelectorAll('.reservation-card').forEach(function(card) {
+                card.classList.remove('selected');
+                if (card.getAttribute('data-id') === id) {
+                    card.classList.add('selected');
+                }
+            });
+
+            renderDetailPanel(res);
+        }
+        window.selectReservation = selectReservation;
+
+        // ============================================================
+        // Detail panel (Task 5)
+        // ============================================================
+        function renderDetailPanel(res) {
+            var panel = document.getElementById('detailPanel');
+            panel.classList.add('show');
+
+            document.getElementById('detailTitle').textContent = t('labelBookingCode') + ': ' + (res.booking_code || '');
+            document.getElementById('detailBookingCode').textContent = res.booking_code || '';
+            document.getElementById('detailAlias').textContent = res.user_alias || '';
+            document.getElementById('detailPickupSite').textContent = res.pickup_site || '';
+
+            var statusHtml = '<span class="status-badge ' + res.status + '">' + getStatusLabel(res.status) + '</span>';
+            document.getElementById('detailStatus').innerHTML = statusHtml;
+
+            document.getElementById('detailStartDate').textContent = res.start_date ? res.start_date.split('T')[0] : '';
+            document.getElementById('detailEndDate').textContent = res.end_date ? res.end_date.split('T')[0] : '';
+
+            // Equipment list
+            var equipEl = document.getElementById('detailEquipment');
+            if (res.equipment && res.equipment.length > 0) {
+                var eqHtml = '<div class="detail-label">' + t('labelEquipment') + '</div>';
+                res.equipment.forEach(function(eq) {
+                    eqHtml += '<div class="equipment-item">' + getEquipmentLabel(eq.equipment_type) + ' x' + eq.quantity + '</div>';
+                });
+                equipEl.innerHTML = eqHtml;
+            } else {
+                equipEl.innerHTML = '';
+            }
+
+            // Allocated equipment
+            var allocEl = document.getElementById('detailAllocated');
+            if (res.allocated_equipment && res.allocated_equipment.length > 0) {
+                var allocHtml = '<div class="detail-label">' + t('labelAllocated') + '</div>';
+                res.allocated_equipment.forEach(function(eq) {
+                    allocHtml += '<span class="allocated-item">' + escapeHtml(eq.equipment_code) + ' (' + getEquipmentLabel(eq.equipment_type || eq.type) + ')</span>';
+                });
+                allocEl.innerHTML = allocHtml;
+            } else {
+                allocEl.innerHTML = '';
+            }
+
+            // Action buttons and deadline logic
+            var actionBtns = document.getElementById('actionButtons');
+            var deadlineMsg = document.getElementById('deadlineMessage');
+            var btnModify = document.getElementById('btnModify');
+            var btnCancel = document.getElementById('btnCancel');
+
+            // Hide modification form when switching reservations
+            hideModificationForm();
+
+            var canModify = (res.status === 'pending' || res.status === 'confirmed');
+
+            if (canModify) {
+                actionBtns.style.display = 'flex';
+
+                var startDateStr = res.start_date ? res.start_date.split('T')[0] : '';
+                var beforeDeadline = isBeforeDeadline(startDateStr);
+
+                if (beforeDeadline) {
+                    btnModify.disabled = false;
+                    btnCancel.disabled = false;
+                    deadlineMsg.classList.remove('show');
+                } else {
+                    btnModify.disabled = true;
+                    btnCancel.disabled = true;
+                    deadlineMsg.textContent = t('deadlineExpired');
+                    deadlineMsg.classList.add('show');
+                }
+            } else {
+                actionBtns.style.display = 'none';
+                deadlineMsg.classList.remove('show');
+            }
+        }
+
+        function hideDetailPanel() {
+            document.getElementById('detailPanel').classList.remove('show');
+            selectedReservation = null;
+            hideModificationForm();
+        }
+
+        // ============================================================
+        // Deadline checker (Task 5) - Pure function
+        // ============================================================
+        // Deadline: 9:00 AM JST on the day before start_date
+        // 9:00 AM JST = 00:00 UTC on the same day
+        // So deadline = (start_date - 1 day) at 00:00 UTC
+        function isBeforeDeadline(startDateString) {
+            if (!startDateString) return false;
+
+            // Parse the date string as YYYY-MM-DD
+            var parts = startDateString.split('-');
+            var year = parseInt(parts[0], 10);
+            var month = parseInt(parts[1], 10) - 1;
+            var day = parseInt(parts[2], 10);
+
+            // Deadline is 9:00 AM JST on day before start_date
+            // 9:00 AM JST = 00:00 UTC on that same day
+            // Day before start_date at 00:00 UTC
+            var deadlineUTC = Date.UTC(year, month, day - 1, 0, 0, 0);
+
+            var now = Date.now();
+            return now < deadlineUTC;
+        }
+        // Expose for testing
+        window.isBeforeDeadline = isBeforeDeadline;
+
+        // ============================================================
+        // Modification form (Task 6)
+        // ============================================================
+        function showModificationForm() {
+            if (!selectedReservation) return;
+
+            var form = document.getElementById('modificationForm');
+            var startInput = document.getElementById('modStartDate');
+            var endInput = document.getElementById('modEndDate');
+            var errorEl = document.getElementById('modFormError');
+
+            // Pre-fill with current dates
+            startInput.value = selectedReservation.start_date ? selectedReservation.start_date.split('T')[0] : '';
+            endInput.value = selectedReservation.end_date ? selectedReservation.end_date.split('T')[0] : '';
+
+            errorEl.className = 'mod-form-error';
+            errorEl.textContent = '';
+
+            form.classList.add('show');
+        }
+        window.showModificationForm = showModificationForm;
+
+        function hideModificationForm() {
+            document.getElementById('modificationForm').classList.remove('show');
+            document.getElementById('modFormError').className = 'mod-form-error';
+        }
+        window.hideModificationForm = hideModificationForm;
+
+        // Pure validation function
+        function validateModificationDates(startDate, endDate, today) {
+            if (!startDate || !endDate || !today) {
+                return { valid: false, errorKey: 'emptyQuery' };
+            }
+
+            var start = new Date(startDate + 'T00:00:00');
+            var end = new Date(endDate + 'T00:00:00');
+            var todayDate = new Date(today + 'T00:00:00');
+
+            // Check weekday (0=Sun, 6=Sat)
+            var dayOfWeek = start.getDay();
+            if (dayOfWeek === 0 || dayOfWeek === 6) {
+                return { valid: false, errorKey: 'weekdayOnly' };
+            }
+
+            // Check start_date >= today + 2 days
+            var minStart = new Date(todayDate);
+            minStart.setDate(minStart.getDate() + 2);
+            if (start < minStart) {
+                return { valid: false, errorKey: 'startDateMin' };
+            }
+
+            // Check end_date >= start_date
+            if (end < start) {
+                return { valid: false, errorKey: 'endDateInvalid' };
+            }
+
+            // Check period <= 90 days
+            var diffMs = end - start;
+            var diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
+            if (diffDays > 90) {
+                return { valid: false, errorKey: 'maxRentalPeriod' };
+            }
+
+            return { valid: true, errorKey: null };
+        }
+        // Expose for testing
+        window.validateModificationDates = validateModificationDates;
+
+        async function submitModification() {
+            if (!selectedReservation) return;
+
+            var startDate = document.getElementById('modStartDate').value;
+            var endDate = document.getElementById('modEndDate').value;
+            var errorEl = document.getElementById('modFormError');
+
+            // Get today's date string
+            var now = new Date();
+            var todayStr = now.getFullYear() + '-' +
+                String(now.getMonth() + 1).padStart(2, '0') + '-' +
+                String(now.getDate()).padStart(2, '0');
+
+            var validation = validateModificationDates(startDate, endDate, todayStr);
+            if (!validation.valid) {
+                errorEl.textContent = t(validation.errorKey);
+                errorEl.className = 'mod-form-error show';
+                return;
+            }
+
+            errorEl.className = 'mod-form-error';
+
+            try {
+                var result = await updateReservationDates(selectedReservation.id, startDate, endDate);
+
+                // Update selected reservation data
+                selectedReservation.start_date = result.start_date || startDate;
+                selectedReservation.end_date = result.end_date || endDate;
+
+                // Update in current results
+                var idx = currentResults.findIndex(function(r) { return r.id === selectedReservation.id; });
+                if (idx !== -1) {
+                    currentResults[idx] = selectedReservation;
+                }
+
+                // Re-render
+                renderReservationList(currentResults);
+                renderDetailPanel(selectedReservation);
+                hideModificationForm();
+
+                showNotification(t('modifySuccess'), 'success');
+            } catch (err) {
+                // Error already handled in updateReservationDates for API errors
+                // Show inline error for form-level issues
+                if (err && err.formError) {
+                    errorEl.textContent = err.message || String(err);
+                    errorEl.className = 'mod-form-error show';
+                }
+            }
+        }
+        window.submitModification = submitModification;
+
+        async function updateReservationDates(id, startDate, endDate) {
+            var response;
+            try {
+                response = await fetch(API_BASE_URL + '/reservations/' + id, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ start_date: startDate, end_date: endDate })
+                });
+            } catch (e) {
+                handleApiError(e, null);
+                throw { formError: false };
+            }
+
+            if (!response.ok) {
+                var errorBody = null;
+                try { errorBody = await response.json(); } catch(e) { /* ignore */ }
+
+                if (response.status === 400) {
+                    // Show inline in form
+                    var msg = (errorBody && (errorBody.message || errorBody.error)) || 'Validation error';
+                    throw { formError: true, message: msg };
+                } else {
+                    handleApiError(errorBody, response);
+                    throw { formError: false };
+                }
+            }
+
+            return await response.json();
+        }
+
+        // ============================================================
+        // Cancellation dialog (Task 7)
+        // ============================================================
+        function showCancelDialog() {
+            if (!selectedReservation) return;
+            var modal = document.getElementById('cancelModal');
+            var errorEl = document.getElementById('cancelModalError');
+            errorEl.className = 'modal-error';
+            errorEl.textContent = '';
+            modal.classList.add('show');
+        }
+        window.showCancelDialog = showCancelDialog;
+
+        function hideCancelDialog() {
+            var modal = document.getElementById('cancelModal');
+            modal.classList.remove('show');
+        }
+        window.hideCancelDialog = hideCancelDialog;
+
+        async function confirmCancel() {
+            if (!selectedReservation) return;
+
+            var errorEl = document.getElementById('cancelModalError');
+            errorEl.className = 'modal-error';
+
+            try {
+                await cancelReservation(selectedReservation.id);
+
+                // Update status locally
+                selectedReservation.status = 'cancelled';
+
+                // Update in current results
+                var idx = currentResults.findIndex(function(r) { return r.id === selectedReservation.id; });
+                if (idx !== -1) {
+                    currentResults[idx].status = 'cancelled';
+                }
+
+                // Re-render
+                renderReservationList(currentResults);
+                renderDetailPanel(selectedReservation);
+                hideCancelDialog();
+
+                showNotification(t('cancelSuccess'), 'success');
+            } catch (err) {
+                if (err && err.dialogError) {
+                    errorEl.textContent = err.message || String(err);
+                    errorEl.className = 'modal-error show';
+                }
+            }
+        }
+        window.confirmCancel = confirmCancel;
+
+        async function cancelReservation(id) {
+            var response;
+            try {
+                response = await fetch(API_BASE_URL + '/reservations/' + id + '/cancel', {
+                    method: 'POST'
+                });
+            } catch (e) {
+                handleApiError(e, null);
+                throw { dialogError: false };
+            }
+
+            if (!response.ok) {
+                var errorBody = null;
+                try { errorBody = await response.json(); } catch(e) { /* ignore */ }
+
+                if (response.status === 400 || response.status === 404) {
+                    var msg = (errorBody && (errorBody.message || errorBody.error)) || 'Error';
+                    throw { dialogError: true, message: msg };
+                } else {
+                    handleApiError(errorBody, response);
+                    throw { dialogError: false };
+                }
+            }
+
+            return await response.json();
+        }
+
+        // ============================================================
+        // Utility functions
+        // ============================================================
+        function escapeHtml(str) {
+            if (!str) return '';
+            var div = document.createElement('div');
+            div.appendChild(document.createTextNode(str));
+            return div.innerHTML;
+        }
+
+        // ============================================================
+        // Initialize
+        // ============================================================
+        updateLanguage();
+
+    }); // end DOMContentLoaded
+    </script>
+</body>
+</html>
