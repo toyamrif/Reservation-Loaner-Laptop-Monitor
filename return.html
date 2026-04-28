@@ -186,8 +186,6 @@
             <input type="text" id="searchInput" class="search-input" placeholder="予約ID、Alias、またはサイト名で検索...">
             <button class="search-btn" onclick="searchReservations()">🔍 検索</button>
             <button class="search-btn" onclick="showAllReservations()">📋 全て表示</button>
-            <button class="search-btn" onclick="debugLocalStorage()" style="background: #232F3E; color: #fff;">🐛 デバッグ</button>
-            <button class="search-btn" onclick="addTestReservation()" style="background: #E7E9EC; color: #111;">➕ テスト予約追加</button>
         </div>
         
         <div id="reservationsContainer"></div>
@@ -455,72 +453,12 @@
         // 初期表示
         showAllReservations();
         
-        // デバッグ: LocalStorageの内容を確認
-        console.log('LocalStorage reservations:', localStorage.getItem('reservations'));
-        console.log('Parsed reservations:', getReservations());
-        
         // Enterキーで検索
         document.getElementById('searchInput').addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 searchReservations();
             }
         });
-        
-        // デバッグ機能
-        async function debugLocalStorage() {
-            const reservations = await getReservations();
-            const inventory = await getInventoryData();
-            
-            alert(`LocalStorage Debug Info:
-            
-予約データ数: ${reservations.length}
-在庫データ: ${Object.keys(inventory).length} サイト
-
-詳細はコンソールを確認してください。`);
-            
-            console.log('=== LocalStorage Debug ===');
-            console.log('Reservations:', reservations);
-            console.log('Inventory:', inventory);
-            console.log('Raw reservations:', localStorage.getItem('reservations'));
-            console.log('Raw inventory:', localStorage.getItem('inventoryData'));
-        }
-        
-        // テスト予約を手動で追加
-        async function addTestReservation() {
-            const testReservation = {
-                reservationId: 'TEST-' + Date.now().toString().slice(-8),
-                alias: 'test-user',
-                pickupSite: 'HND10',
-                nonAmazonPC: 1,
-                amazonPC: 0,
-                monitors: 1,
-                startDate: '2024-12-15',
-                endDate: '2024-12-20',
-                rentalDays: 5,
-                status: 'active',
-                createdAt: new Date().toISOString()
-            };
-            
-            try {
-                const response = await fetch(`${API_BASE_URL}/reservations`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(testReservation)
-                });
-                
-                if (!response.ok) {
-                    throw new Error('テスト予約の追加に失敗しました');
-                }
-                
-                alert('テスト予約を追加しました: ' + testReservation.reservationId);
-                showAllReservations();
-            } catch (error) {
-                console.error('テスト予約追加エラー:', error);
-                alert('テスト予約の追加に失敗しました: ' + error.message);
-            }
-        }
         
         // 返却完了メール通知機能
         function showReturnEmailNotification(reservation) {
