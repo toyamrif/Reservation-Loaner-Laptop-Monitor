@@ -1,7 +1,11 @@
 /**
  * Lambda A（VPC内）- Step Functions用
- * RDSから「明日受け取り予定の予約」を取得してデータを返すだけ。
- * Slack送信はLambda B（VPC外）が担当。
+ * RDSクエリを実行してデータを返す。
+ * 
+ * 3つのモード:
+ * 1. type="pickup" (デフォルト) — 明日受け取り予定の予約を取得
+ * 2. type="return_today" — 今日が返却日の予約を取得（ユーザーへのメール用）
+ * 3. type="overdue" — 返却期限超過の予約を取得（IT向けSlack通知用）
  */
 
 const { Pool } = require('pg');
@@ -19,19 +23,29 @@ const pool = new Pool({
 });
 
 /**
+ * 今日の日付を取得（JST基準）
+ */
+function getTodayJST() {
+  const now = new Date();
+  const jst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+  const year = jst.getUTCFullYear();
+  const month = String(jst.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(jst.getUTCDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+/**
  * 明日の日付を取得（JST基準）
  * 金曜実行 → 月曜の予約を取得
  */
 function getTargetDate() {
   const now = new Date();
-  // JSTに変換 (UTC+9)
   const jst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
-  const dayOfWeek = jst.getUTCDay(); // 0=日, 1=月, ..., 5=金, 6=土
+  const dayOfWeek = jst.getUTCDay();
 
-  let daysToAdd = 1; // 通常は翌日
+  let daysToAdd = 1;
   if (dayOfWeek === 5) {
-    // 金曜日 → 月曜日（3日後）
-    daysToAdd = 3;
+    daysToAdd = 3; // 金曜 → 月曜
   }
 
   const target = new Date(jst);
@@ -52,19 +66,9 @@ async function getTomorrowReservations() {
 
   const query = `
     SELECT 
-      r.id,
-      r.booking_code,
-      r.user_alias,
-      r.pickup_site,
-      r.start_date,
-      r.end_date,
-      r.status,
-      json_agg(
-        json_build_object(
-          'equipment_type', re.equipment_type,
-          'quantity', re.quantity
-        )
-      ) as equipment
+      r.id, r.booking_code, r.user_alias, r.pickup_site,
+      r.start_date, r.end_date, r.status,
+      json_agg(json_build_object('equipment_type', re.equipment_type, 'quantity', re.quantity)) as equipment
     FROM reservations r
     LEFT JOIN reservation_equipment re ON r.id = re.reservation_id
     WHERE r.start_date::date = $1::date
@@ -75,6 +79,55 @@ async function getTomorrowReservations() {
 
   const result = await pool.query(query, [targetDate]);
   return { reservations: result.rows, targetDate };
+}
+
+/**
+ * 今日が返却日の予約を取得（まだ返却されていないもの）
+ */
+async function getTodayReturnReservations() {
+  const today = getTodayJST();
+  console.log('Today return date:', today);
+
+  const query = `
+    SELECT 
+      r.id, r.booking_code, r.user_alias, r.pickup_site,
+      r.start_date, r.end_date, r.status,
+      json_agg(json_build_object('equipment_type', re.equipment_type, 'quantity', re.quantity)) as equipment
+    FROM reservations r
+    LEFT JOIN reservation_equipment re ON r.id = re.reservation_id
+    WHERE r.end_date::date = $1::date
+      AND r.status IN ('pending', 'confirmed', 'setup_complete')
+    GROUP BY r.id
+    ORDER BY r.pickup_site, r.user_alias
+  `;
+
+  const result = await pool.query(query, [today]);
+  return { reservations: result.rows, targetDate: today };
+}
+
+/**
+ * 返却期限超過の予約を取得
+ */
+async function getOverdueReservations() {
+  const today = getTodayJST();
+  console.log('Checking overdue before:', today);
+
+  const query = `
+    SELECT 
+      r.id, r.booking_code, r.user_alias, r.pickup_site,
+      r.start_date, r.end_date, r.status,
+      ($1::date - r.end_date::date) as days_overdue,
+      json_agg(json_build_object('equipment_type', re.equipment_type, 'quantity', re.quantity)) as equipment
+    FROM reservations r
+    LEFT JOIN reservation_equipment re ON r.id = re.reservation_id
+    WHERE r.end_date::date < $1::date
+      AND r.status IN ('pending', 'confirmed', 'setup_complete')
+    GROUP BY r.id
+    ORDER BY r.end_date ASC, r.pickup_site
+  `;
+
+  const result = await pool.query(query, [today]);
+  return { reservations: result.rows, targetDate: today };
 }
 
 /**
@@ -93,26 +146,37 @@ async function getSiteManagers() {
 
 /**
  * Lambda ハンドラー
- * Step Functionsから呼ばれ、予約データを返す
  */
 exports.handler = async (event) => {
-  console.log('Lambda A (DB Query) triggered:', JSON.stringify(event));
+  console.log('Lambda A triggered:', JSON.stringify(event));
+
+  const type = event.type || 'pickup';
 
   try {
-    const { reservations, targetDate } = await getTomorrowReservations();
-    const managers = await getSiteManagers();
+    let data;
 
-    console.log(`Found ${reservations.length} reservations for ${targetDate}`);
+    if (type === 'return_today') {
+      const { reservations, targetDate } = await getTodayReturnReservations();
+      console.log(`Found ${reservations.length} return-today reservations`);
+      data = { type, count: reservations.length, targetDate, reservations };
 
-    // Step Functionsの次のステート（Lambda B）に渡すデータ
-    return {
-      count: reservations.length,
-      targetDate,
-      reservations,
-      managers
-    };
+    } else if (type === 'overdue') {
+      const { reservations, targetDate } = await getOverdueReservations();
+      const managers = await getSiteManagers();
+      console.log(`Found ${reservations.length} overdue reservations`);
+      data = { type, count: reservations.length, targetDate, reservations, managers };
+
+    } else {
+      // Default: pickup reminder
+      const { reservations, targetDate } = await getTomorrowReservations();
+      const managers = await getSiteManagers();
+      console.log(`Found ${reservations.length} pickup reservations for ${targetDate}`);
+      data = { type: 'pickup', count: reservations.length, targetDate, reservations, managers };
+    }
+
+    return data;
   } catch (error) {
     console.error('Error in Lambda A:', error);
-    throw error; // Step Functionsがエラーをキャッチ
+    throw error;
   }
 };

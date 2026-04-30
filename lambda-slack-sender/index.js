@@ -99,6 +99,13 @@ exports.handler = async (event) => {
   }
 
   // Step Functionsから（リマインダー送信）
+  const type = event.type || 'pickup';
+  
+  if (type === 'return_today') {
+    return await handleReturnTodayReminder(event);
+  } else if (type === 'overdue') {
+    return await handleOverdueNotification(event);
+  }
   return await handleReminder(event);
 };
 
@@ -329,4 +336,133 @@ function buildSetupCompleteEmail(userAlias, bookingCode, pickupSite, startDate, 
   email += '---\nAmazon IT';
 
   return email;
+}
+
+// ============================================
+// 返却日当日メール送信
+// ============================================
+async function handleReturnTodayReminder(event) {
+  const { reservations, count } = event;
+
+  if (!reservations || count === 0) {
+    console.log('No return-today reservations');
+    return { message: 'No return-today reservations', count: 0 };
+  }
+
+  const results = [];
+
+  for (const r of reservations) {
+    const userAlias = r.user_alias;
+    const bookingCode = r.booking_code || r.id.substring(0, 8);
+    const endDate = typeof r.end_date === 'string' ? r.end_date.split('T')[0] : r.end_date;
+    const pickupSite = r.pickup_site;
+
+    const equipLabels = { amazon_pc: 'Amazon PC', non_amazon_pc: 'Non-Amazon PC', monitor: 'モニター' };
+    let equipList = '';
+    if (r.equipment && r.equipment.length > 0) {
+      equipList = r.equipment.map(function(eq) {
+        return '・' + (equipLabels[eq.equipment_type] || eq.equipment_type) + ': ' + eq.quantity + '台';
+      }).join('\n');
+    }
+
+    const emailBody = userAlias + ' 様\n\n' +
+      'いつもお疲れ様です。\n' +
+      'Loaner機器予約システムより、返却日のご連絡です。\n\n' +
+      '■ 本日が返却予定日です\n' +
+      '予約コード: ' + bookingCode + '\n' +
+      '返却予定日: ' + endDate + '\n' +
+      '受取サイト: ' + pickupSite + '\n\n' +
+      '■ 返却機器\n' + equipList + '\n\n' +
+      '■ 返却方法\n' +
+      'Amazon Loaner laptopは返却用ロッカーをお使いください。\n' +
+      'モニターについては、ピックアップされた時と同じ場所で構いません。\n\n' +
+      'ロッカーの場所や使い方について：\n' +
+      'https://w.amazon.com/bin/view/JP-Local-IT/IT_Support_About_Hardware_On_HND10_HND11_HND17/Return_PC/\n\n' +
+      '延長が必要な場合は、予約確認ページから日程変更をお願いします。\n\n' +
+      '---\nAmazon IT';
+
+    try {
+      await httpsRequest(EMAIL_API, 'POST', {
+        to: userAlias + '@amazon.co.jp',
+        subject: '【Loaner機器予約システム】本日が返却予定日です - ' + bookingCode,
+        message: emailBody
+      });
+      results.push({ user: userAlias, bookingCode, status: 'sent' });
+      console.log('Return reminder email sent to:', userAlias);
+    } catch (err) {
+      console.error('Email error for ' + userAlias + ':', err.message);
+      results.push({ user: userAlias, bookingCode, status: 'error', error: err.message });
+    }
+  }
+
+  return { message: 'Return-today reminders sent', count: results.length, results };
+}
+
+// ============================================
+// 返却期限超過 Slack通知（毎週水曜）
+// ============================================
+async function handleOverdueNotification(event) {
+  const { reservations, managers, count } = event;
+
+  if (!reservations || count === 0) {
+    console.log('No overdue reservations');
+    return { message: 'No overdue reservations', count: 0 };
+  }
+
+  try {
+    const botToken = await getSlackBotToken();
+
+    const blocks = [];
+    blocks.push({
+      type: 'header',
+      text: { type: 'plain_text', text: '⚠️ 返却期限超過レポート', emoji: true }
+    });
+    blocks.push({
+      type: 'section',
+      text: { type: 'mrkdwn', text: '*' + count + '件* の予約が返却期限を超過しています。' }
+    });
+    blocks.push({ type: 'divider' });
+
+    for (const r of reservations) {
+      const bookingCode = r.booking_code || r.id.substring(0, 8);
+      const endDate = typeof r.end_date === 'string' ? r.end_date.split('T')[0] : r.end_date;
+      const daysOverdue = r.days_overdue || '?';
+
+      blocks.push({
+        type: 'section',
+        text: {
+          type: 'mrkdwn',
+          text: '*' + bookingCode + '* - ' + r.user_alias + '\n' +
+                '📍 ' + r.pickup_site + ' | 返却予定: ' + endDate + ' | *' + daysOverdue + '日超過*'
+        }
+      });
+    }
+
+    blocks.push({ type: 'divider' });
+
+    // 担当者メンション
+    const allManagers = (managers || []);
+    const mentions = allManagers.length > 0
+      ? allManagers.map(function(m) { return m.slack_user_id ? '<@' + m.slack_user_id + '>' : m.user_alias; }).join(' ')
+      : '担当者未設定';
+
+    blocks.push({
+      type: 'section',
+      text: { type: 'mrkdwn', text: '*担当者:* ' + mentions }
+    });
+
+    const message = {
+      channel: 'it-loaner-reminder',
+      text: '⚠️ 返却期限超過レポート (' + count + '件)',
+      blocks: blocks
+    };
+
+    const result = await sendSlackMessage(botToken, message);
+    console.log('Overdue notification sent');
+
+    return { message: 'Overdue notification sent', count, ts: result.ts };
+  } catch (error) {
+    console.error('Overdue notification error:', error);
+    throw error;
+  }
 }
