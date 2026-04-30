@@ -1384,11 +1384,12 @@
                         successMsg += '\n✅ 確認メールを ' + formData.alias + '@amazon.co.jp に送信しました。';
                         successMsg += '\n\n⚠️ 予約の変更・キャンセルは利用開始日の前日 午前9時まで可能です。';
                         successMsg += '\nそれ以降の変更はIT窓口までお越しください。';
+                        successMsg += '\n\n📋 予約確認・変更ページで予約状況を確認できます。';
 
                         alert(successMsg);
 
-                        // フォームをリセット
-                        location.reload();
+                        // 予約確認ページへ遷移（aliasを検索パラメータとして渡す）
+                        window.location.href = 'reservation.html?q=' + encodeURIComponent(formData.alias);
                     } else {
                         const error = await response.json();
                         console.error('Email sending failed:', error);
@@ -1424,5 +1425,9 @@
             console.log('Single-page form loaded successfully');
         });
     </script>
+    
+    <div style="text-align: center; padding: 20px 0 40px; font-size: 12px; color: #888;">
+        <a href="admin.html" style="color: #888; text-decoration: none;">IT管理者はこちら</a>
+    </div>
 </body>
 </html>

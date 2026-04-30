@@ -1465,7 +1465,19 @@
         // ============================================================
         updateLanguage();
 
+        // URL パラメータで自動検索（予約完了後のリダイレクト対応）
+        var urlParams = new URLSearchParams(window.location.search);
+        var autoQuery = urlParams.get('q');
+        if (autoQuery) {
+            document.getElementById('searchInput').value = autoQuery;
+            handleSearch();
+        }
+
     }); // end DOMContentLoaded
     </script>
+    
+    <div style="text-align: center; padding: 20px 0 40px; font-size: 12px; color: #888;">
+        <a href="admin.html" style="color: #888; text-decoration: none;">IT管理者はこちら</a>
+    </div>
 </body>
 </html>
