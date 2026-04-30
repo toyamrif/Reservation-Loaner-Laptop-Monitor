@@ -66,6 +66,10 @@ exports.handler = async (event) => {
       return await getReservations(event);
     } else if (path === '/reservations' && method === 'POST') {
       return await createReservation(event);
+    } else if (path === '/reservations/search' && method === 'GET') {
+      return await searchReservations(event);
+    } else if (path === '/reservations/cleanup' && method === 'POST') {
+      return await cleanupOldReservations(event);
     } else if (path.match(/^\/reservations\/[^\/]+$/) && method === 'GET') {
       return await getReservationById(event);
     } else if (path.match(/^\/reservations\/[^\/]+$/) && method === 'PUT') {
@@ -74,10 +78,6 @@ exports.handler = async (event) => {
       return await cancelReservation(event);
     } else if (path.match(/^\/reservations\/[^\/]+\/return$/) && method === 'POST') {
       return await returnReservation(event);
-    } else if (path === '/reservations/search' && method === 'GET') {
-      return await searchReservations(event);
-    } else if (path === '/reservations/cleanup' && method === 'POST') {
-      return await cleanupOldReservations(event);
     } else if (path === '/slack/interactions' && method === 'POST') {
       return await handleSlackInteraction(event);
     } else if (path === '/slack/send-reminder' && method === 'POST') {
