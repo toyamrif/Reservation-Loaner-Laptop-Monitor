@@ -162,16 +162,14 @@ exports.handler = async (event) => {
 
     } else if (type === 'overdue') {
       const { reservations, targetDate } = await getOverdueReservations();
-      const managers = await getSiteManagers();
       console.log(`Found ${reservations.length} overdue reservations`);
-      data = { type, count: reservations.length, targetDate, reservations, managers };
+      data = { type, count: reservations.length, targetDate, reservations };
 
     } else {
       // Default: pickup reminder
       const { reservations, targetDate } = await getTomorrowReservations();
-      const managers = await getSiteManagers();
       console.log(`Found ${reservations.length} pickup reservations for ${targetDate}`);
-      data = { type: 'pickup', count: reservations.length, targetDate, reservations, managers };
+      data = { type: 'pickup', count: reservations.length, targetDate, reservations };
     }
 
     return data;

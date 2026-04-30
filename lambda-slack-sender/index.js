@@ -172,16 +172,6 @@ async function handleReminder(event) {
         blocks.push({ type: 'divider' });
       }
 
-      const siteManagers = (managers || []).filter(m => m.site === site);
-      const mentions = siteManagers.length > 0
-        ? siteManagers.map(m => m.slack_user_id ? '<@' + m.slack_user_id + '>' : m.user_alias).join(' ')
-        : '担当者未設定';
-
-      blocks.push({
-        type: 'section',
-        text: { type: 'mrkdwn', text: '*担当者:* ' + mentions }
-      });
-
       const message = {
         channel: 'it-loaner-reminder',
         text: '📋 予約リマインダー - ' + site + ' (' + siteReservations.length + '件)',
@@ -437,19 +427,6 @@ async function handleOverdueNotification(event) {
         }
       });
     }
-
-    blocks.push({ type: 'divider' });
-
-    // 担当者メンション
-    const allManagers = (managers || []);
-    const mentions = allManagers.length > 0
-      ? allManagers.map(function(m) { return m.slack_user_id ? '<@' + m.slack_user_id + '>' : m.user_alias; }).join(' ')
-      : '担当者未設定';
-
-    blocks.push({
-      type: 'section',
-      text: { type: 'mrkdwn', text: '*担当者:* ' + mentions }
-    });
 
     const message = {
       channel: 'it-loaner-reminder',
