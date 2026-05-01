@@ -787,6 +787,7 @@
                 modifySuccess: '予約日程が変更されました',
                 deadlineExpired: '変更・キャンセルの受付は終了しました（貸出開始日の3日前まで）。IT窓口までお越しください',
                 weekdayOnly: '貸出日は平日のみ選択可能です',
+                holidayOnly: '貸出開始日に祝日は選択できません',
                 maxRentalPeriod: '貸出期間は最大90日です',
                 startDateMin: '貸出開始日は2日後以降を選択してください',
                 endDateInvalid: '返却日は貸出開始日以降を選択してください',
@@ -829,6 +830,7 @@
                 modifySuccess: 'Reservation dates have been updated',
                 deadlineExpired: 'The modification deadline has passed (3 days before start date). Please visit the IT counter.',
                 weekdayOnly: 'Start date must be a weekday',
+                holidayOnly: 'Start date cannot be a national holiday',
                 maxRentalPeriod: 'Maximum rental period is 90 days',
                 startDateMin: 'Start date must be at least 2 days from today',
                 endDateInvalid: 'End date must be on or after start date',
@@ -1249,6 +1251,26 @@
         }
         window.hideModificationForm = hideModificationForm;
 
+        // 日本の祝日リスト（YYYY-MM-DD形式）
+        var JAPAN_HOLIDAYS = [
+            // 2026年
+            '2026-01-01', '2026-01-12', '2026-02-11', '2026-02-23',
+            '2026-03-20', '2026-04-29', '2026-05-03', '2026-05-04',
+            '2026-05-05', '2026-05-06', '2026-07-20', '2026-08-11',
+            '2026-09-21', '2026-09-22', '2026-09-23', '2026-10-12',
+            '2026-11-03', '2026-11-23', '2026-12-23',
+            // 2027年
+            '2027-01-01', '2027-01-11', '2027-02-11', '2027-02-23',
+            '2027-03-21', '2027-03-22', '2027-04-29', '2027-05-03',
+            '2027-05-04', '2027-05-05', '2027-07-19', '2027-08-11',
+            '2027-09-20', '2027-09-23', '2027-10-11', '2027-11-03',
+            '2027-11-23', '2027-12-23'
+        ];
+
+        function isJapanHoliday(dateStr) {
+            return JAPAN_HOLIDAYS.indexOf(dateStr) !== -1;
+        }
+
         // Pure validation function
         function validateModificationDates(startDate, endDate, today) {
             if (!startDate || !endDate || !today) {
@@ -1263,6 +1285,11 @@
             var dayOfWeek = start.getDay();
             if (dayOfWeek === 0 || dayOfWeek === 6) {
                 return { valid: false, errorKey: 'weekdayOnly' };
+            }
+
+            // Check Japan holiday
+            if (isJapanHoliday(startDate)) {
+                return { valid: false, errorKey: 'holidayOnly' };
             }
 
             // Check start_date >= today + 2 days
