@@ -785,7 +785,7 @@
                 cancelNo: 'いいえ',
                 cancelSuccess: '予約がキャンセルされました',
                 modifySuccess: '予約日程が変更されました',
-                deadlineExpired: '変更・キャンセルの受付は終了しました。IT窓口までお越しください',
+                deadlineExpired: '変更・キャンセルの受付は終了しました（貸出開始日の3日前まで）。IT窓口までお越しください',
                 weekdayOnly: '貸出日は平日のみ選択可能です',
                 maxRentalPeriod: '貸出期間は最大90日です',
                 startDateMin: '貸出開始日は2日後以降を選択してください',
@@ -827,7 +827,7 @@
                 cancelNo: 'No',
                 cancelSuccess: 'Reservation has been cancelled',
                 modifySuccess: 'Reservation dates have been updated',
-                deadlineExpired: 'The modification deadline has passed. Please visit the IT counter.',
+                deadlineExpired: 'The modification deadline has passed (3 days before start date). Please visit the IT counter.',
                 weekdayOnly: 'Start date must be a weekday',
                 maxRentalPeriod: 'Maximum rental period is 90 days',
                 startDateMin: 'Start date must be at least 2 days from today',
@@ -1198,9 +1198,9 @@
         // ============================================================
         // Deadline checker (Task 5) - Pure function
         // ============================================================
-        // Deadline: 9:00 AM JST on the day before start_date
-        // 9:00 AM JST = 00:00 UTC on the same day
-        // So deadline = (start_date - 1 day) at 00:00 UTC
+        // Deadline: 3 days before start_date (end of day JST)
+        // 3 days before at 23:59 JST = day-3 at 14:59 UTC
+        // Simplified: now must be before day-3 at 15:00 UTC (= day-2 at 00:00 JST)
         function isBeforeDeadline(startDateString) {
             if (!startDateString) return false;
 
@@ -1210,10 +1210,10 @@
             var month = parseInt(parts[1], 10) - 1;
             var day = parseInt(parts[2], 10);
 
-            // Deadline is 9:00 AM JST on day before start_date
-            // 9:00 AM JST = 00:00 UTC on that same day
-            // Day before start_date at 00:00 UTC
-            var deadlineUTC = Date.UTC(year, month, day - 1, 0, 0, 0);
+            // Deadline is end of 3 days before start_date (JST)
+            // = start_date - 3 days at 23:59:59 JST
+            // = start_date - 2 days at 00:00:00 JST = start_date - 3 days at 15:00 UTC
+            var deadlineUTC = Date.UTC(year, month, day - 3, 15, 0, 0);
 
             var now = Date.now();
             return now < deadlineUTC;
